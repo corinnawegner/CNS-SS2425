@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from learning_rules import Neuron, Synapse
+from sklearn.decomposition import PCA
 
 path_data = r"C:\Users\corin\PycharmProjects\CNS-SS2425\cmake-build-debug\random_numbers.txt"
 random_numbers = np.loadtxt(path_data, delimiter='\t')
@@ -46,17 +47,26 @@ for key, rn in dict_r.items():
     df_data_6b = pd.DataFrame({"time": np.arange(0, 2000, 0.1), "weight_6b": list_weight_6b})
 
     plt.figure(figsize=(12, 8))
-    plt.plot(np.arange(0, 2000, 2), random_numbers[:,1], color="darkgrey", label= "Constant currents")
-    plt.plot(np.arange(0, 2000, 2), random_numbers[:,0], color="lightgrey", label= "Constant currents")
-    plt.plot([0,2000],[list_weight_6a[0], list_weight_6a[-1]], color = "black")
-    plt.plot([0,2000],[list_weight_6b[0], list_weight_6b[-1]], color = "black")
-    plt.plot(df_data_6a['time'], df_data_6a['weight_6a'], label='Synaptic Weight for Synapse 1', color='purple')
-    plt.plot(df_data_6b['time'], df_data_6b['weight_6b'], label='Synaptic Weight for Synapse 2', color='orange')
+    #plt.plot(np.arange(0, 2000, 2), random_numbers[:,1], color="darkgrey", label= "Constant currents")
+    #plt.plot(np.arange(0, 2000, 2), random_numbers[:,0], color="lightgrey", label= "Constant currents")
+    #plt.plot([0,2000],[list_weight_6a[0], list_weight_6a[-1]], color = "black")
+    #plt.plot([0,2000],[list_weight_6b[0], list_weight_6b[-1]], color = "black")
+    #plt.plot(df_data_6a['time'], df_data_6a['weight_6a'], label='Synaptic Weight for Synapse 1', color='purple')
+    #plt.plot(df_data_6b['time'], df_data_6b['weight_6b'], label='Synaptic Weight for Synapse 2', color='orange')
+    plt.scatter(df_data_6a['weight_6a'], df_data_6b['weight_6b'], color='blue',label='Weights')
+    plt.scatter(random_numbers[:, 0], random_numbers[:, 1], label="random numbers", color="grey", alpha=0.5)
+
+    mean_num = np.mean(random_numbers, axis=0)
+    pca = PCA(n_components=1)
+    pca.fit(random_numbers)
+    dir_var = pca.components_[0]
+    plt.quiver(mean_num[0], mean_num[1], dir_var[0], dir_var[1],
+               angles='xy', scale_units='xy', scale=1, color='green', label="Smallest Variance Direction")
 
     # Adding labels and title
-    plt.xlabel('Time')
-    plt.ylabel('Weight')
-    plt.title(f'Time Course of Synaptic Weights for {key}')
+    plt.xlabel('Weight a')
+    plt.ylabel('Weight b')
+    plt.title(f'Weights plotted against each other for {key}')
     plt.grid(True)
     plt.legend()
     plt.show()
@@ -103,13 +113,16 @@ df_data_6d = pd.DataFrame({"time": np.arange(0, 100, 0.1), "weight_6d": list_wei
 
 # Plot the time course of weights for both synapses in Exercise 4
 plt.figure(figsize=(12, 8))
-plt.plot(df_data_6c['time'], df_data_6c['weight_6c'], label='Synaptic Weight 6c', color='purple')
-plt.plot(df_data_6d['time'], df_data_6d['weight_6d'], label='Synaptic Weight 6d', color='orange')
+#plt.plot(df_data_6c['time'], df_data_6c['weight_6c'], label='Synaptic Weight 6c', color='purple')
+#plt.plot(df_data_6d['time'], df_data_6d['weight_6d'], label='Synaptic Weight 6d', color='orange')
+
+plt.scatter(df_data_6c['weight_6c'], df_data_6d['weight_6d'], color='blue', label='Weights')
+plt.scatter(random_numbers_4[:, 0], random_numbers_4[:, 1], label="random numbers", color="grey", alpha=0.5)
 
 # Adding labels and title
 plt.xlabel('Time')
 plt.ylabel('Weight')
-plt.title('Time Course of Synaptic Weights using Covariance Rule for Two Presynaptic Neurons')
+plt.title('Weights plotted against each other using Covariance Rule for Two Presynaptic Neurons')
 plt.grid(True)
 plt.legend()
 plt.show()

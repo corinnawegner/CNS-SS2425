@@ -10,20 +10,24 @@ mean_num = np.mean(random_numbers, axis=0)
 print(mean_num)
 
 # Perform PCA
-pca = PCA(n_components=1)  # We only need the first principal component
+pca = PCA(n_components=2)
 pca.fit(random_numbers)
 
-# Get the direction of the largest variance (first principal component)
-principal_component = pca.components_[0]
+# Get the direction of the largest and smallest variance
+largest_variance_direction = pca.components_[0]  # First principal component
+smallest_variance_direction = pca.components_[1]  # Second principal component
 
-print("Direction of largest variance:", principal_component)
+print("Direction of largest variance:", largest_variance_direction)
+print("Direction of smallest variance:", smallest_variance_direction)
 
 # Plot the dataset
 plt.scatter(random_numbers[:, 0], random_numbers[:, 1], label="Data Points", color="blue", alpha=0.5)
 
 # Plot the principal component as an arrow starting from the mean
-plt.quiver(mean_num[0], mean_num[1], principal_component[0], principal_component[1],
-           angles='xy', scale_units='xy', scale=1, color='red', label="Principal Component")
+plt.quiver(mean_num[0], mean_num[1], largest_variance_direction[0], largest_variance_direction[1],
+           angles='xy', scale_units='xy', scale=1, color='red', label="Largest Variance Direction")
+plt.quiver(mean_num[0], mean_num[1], smallest_variance_direction[0], smallest_variance_direction[1],
+           angles='xy', scale_units='xy', scale=1, color='green', label="Smallest Variance Direction")
 
 # Set plot properties
 plt.xlabel("Feature 1")
