@@ -15,7 +15,13 @@ list_r = [random_numbers, random_numbers_2, random_numbers_3, random_numbers_4]
 vals_r = ["Phi: 0, Offset: (0,0)", "Phi: 20°, Offset: (0,0)", "Phi: 45, Offset: (0,0)", "Phi: -45°, Offset: (2,2)"]
 dict_r = {vals_r[i]: list_r[i] for i in range(len(vals_r))}
 
+import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA
+import numpy as np
+import pandas as pd
+
 for key, rn in dict_r.items():
+    # Initialize neurons and synapses
     pre_neuron_6a = Neuron(rn[0][0])
     pre_neuron_6b = Neuron(rn[0][1])
     post_neuron_6 = Neuron(0.1)
@@ -26,6 +32,7 @@ for key, rn in dict_r.items():
     list_weight_6a = []
     list_weight_6b = []
 
+    # Simulate and record weights over time
     for t in np.arange(0, 2000, 0.1):
         list_weight_6a.append(synapse_6a.weight)
         list_weight_6b.append(synapse_6b.weight)
@@ -38,49 +45,45 @@ for key, rn in dict_r.items():
         synapse_6a.update_weight()
         synapse_6b.update_weight()
 
-        if t%2 == 0:
-            pre_neuron_6a.constant_current = rn[int(t/2), 0]
-            pre_neuron_6b.constant_current = rn[int(t/2), 1]
+        if t % 2 == 0:
+            pre_neuron_6a.constant_current = rn[int(t / 2), 0]
+            pre_neuron_6b.constant_current = rn[int(t / 2), 1]
 
-
+    # Create DataFrames for weights
     df_data_6a = pd.DataFrame({"time": np.arange(0, 2000, 0.1), "weight_6a": list_weight_6a})
     df_data_6b = pd.DataFrame({"time": np.arange(0, 2000, 0.1), "weight_6b": list_weight_6b})
 
+    # Calculate PCA on random numbers
     mean_num = np.mean(rn, axis=0)
     pca = PCA(n_components=1)
     pca.fit(rn)
     dir_var = pca.components_[0]
 
-    #plt.figure(figsize=(12, 8))
-    #plt.scatter(df_data_6a['weight_6a'], df_data_6b['weight_6b'], color='blue', label='Weights')
-    #plt.scatter(rn[:, 0], rn[:, 1], label="random numbers", color="grey", alpha=0.5)
+    # Create side-by-side subplots
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 8))
 
-    fig, ax1 = plt.subplots()
-
-    # Plot the first dataset on the primary y-axis
+    # First subplot: Scatter plot for weights
     ax1.scatter(df_data_6a['weight_6a'], df_data_6b['weight_6b'], color='blue', label='Weights')
-    ax1.set_xlabel('Weight 1')  # Label for x-axis
-    ax1.set_ylabel('Weight 2', color='blue')  # Label for primary y-axis
-    ax1.tick_params(axis='y', labelcolor='blue')
+    ax1.set_xlabel('Weight a')
+    ax1.set_ylabel('Weight b')
+    ax1.set_title(f'Weights plotted against each other for {key}')
+    ax1.grid(True)
+    ax1.legend()
 
-    # Create the secondary y-axis
-    ax2 = ax1.twinx()
-
-    # Plot the second dataset on the secondary y-axis
+    # Second subplot: Scatter plot for random numbers with PCA component
     ax2.scatter(rn[:, 0], rn[:, 1], label="Random Numbers", color="grey", alpha=0.5)
-    ax2.set_ylabel('Random Numbers', color='grey')  # Label for secondary y-axis
-    ax2.tick_params(axis='y', labelcolor='grey')
+    ax2.quiver(mean_num[0], mean_num[1], dir_var[0], dir_var[1],
+               angles='xy', scale_units='xy', scale=1, color='green', label="Smallest Variance Direction")
+    ax2.set_xlabel('Random Numbers 1')
+    ax2.set_ylabel('Random Numbers 2')
+    ax2.set_title(f'Random Numbers with PCA for {key}')
+    ax2.grid(True)
+    ax2.legend()
 
-    plt.quiver(mean_num[0], mean_num[1], dir_var[0], dir_var[1],
-               angles='xy', scale_units='xy', scale=1, color='green', label="Principal component")
-
-    # Adding labels and title
-    #plt.xlabel('Weight 1')
-    #plt.ylabel('Weight 2')
-    plt.title(f'Weights plotted against each other for {key}')
-    plt.grid(True)
-    plt.legend()
+    # Display the plots
+    plt.suptitle(f'Weights and Random Numbers Analysis for {key}', fontsize=16)
     plt.show()
+
 
 # Covariance rule
 
@@ -128,40 +131,44 @@ pca = PCA(n_components=1)
 pca.fit(random_numbers_4)
 dir_var = pca.components_[0]
 
-# Create main figure and primary axis
-fig, ax1 = plt.subplots(figsize=(10, 10))
+# Create main figure and two subplots arranged horizontally
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 10))
 
-# Primary X-axis and Y-axis for weights
+# First subplot: Scatter plot for weights
 ax1.scatter(df_data_6c['weight_6c'], df_data_6d['weight_6d'], color='blue', label='Weights')
 ax1.set_xlabel('Weight 1', color='blue')
 ax1.set_ylabel('Weight 2', color='blue')
 ax1.tick_params(axis='y', labelcolor='blue')
 
-# Create secondary axes for the random numbers
-ax3 = ax1.twiny()  # Secondary X-axis for random numbers
-ax4 = ax1.twinx()  # Secondary Y-axis for random numbers
-
+# Adjust y-axis limits for the first plot based on the weights
 weight_6d_min, weight_6d_max = df_data_6d['weight_6d'].min(), df_data_6d['weight_6d'].max()
-#ax1.set_ylim(weight_6d_min , weight_6d_max)
+ax1.set_ylim(weight_6d_min, weight_6d_max)
 
-# Configure the secondary x- and y-axes specifically for random numbers
-ax3.set_xlabel('Random Numbers 1', color='grey')
-ax3.tick_params(axis='x', labelcolor='grey')
-ax4.set_ylabel('Random Numbers 2', color='grey')
-ax4.tick_params(axis='y', labelcolor='grey')
+# Title, grid, and legend for the first subplot
+ax1.set_title('Weights Comparison')
+ax1.grid(True)
+ax1.legend()
 
-#ax3.set_xlim(random_numbers_4[:, 0].min() - 1, random_numbers_4[:, 0].max() + 1)
-#ax4.set_ylim(random_numbers_4[:, 1].min() - 1, random_numbers_4[:, 1].max() + 1)
+# Second subplot: Scatter plot for random numbers and PCA component
+ax2.scatter(random_numbers_4[:, 0], random_numbers_4[:, 1], color="grey", alpha=0.5, label="Random Numbers")
+ax2.set_xlabel('Random Numbers 1', color='grey')
+ax2.set_ylabel('Random Numbers 2', color='grey')
+ax2.tick_params(axis='x', labelcolor='grey')
+ax2.tick_params(axis='y', labelcolor='grey')
 
-# Plot the random numbers on their own x- and y-axes
-ax3.scatter(random_numbers_4[:, 0], random_numbers_4[:, 1], color="grey", alpha=0.5, label="Random Numbers")
+# Adjust limits for the second plot based on the random numbers
+ax2.set_xlim(random_numbers_4[:, 0].min() - 1, random_numbers_4[:, 0].max() + 1)
+ax2.set_ylim(random_numbers_4[:, 1].min() - 1, random_numbers_4[:, 1].max() + 1)
 
-# Add PCA direction as a quiver plot on the random numbers' axes
-ax3.quiver(mean_num[0], mean_num[1], dir_var[0], dir_var[1],
+# Add PCA direction as a quiver plot on the second subplot
+ax2.quiver(mean_num[0], mean_num[1], dir_var[0], dir_var[1],
            angles='xy', scale_units='xy', scale=1, color='green', label="Principal component")
 
-# Title, grid, and legend
-plt.title('Weights plotted against each other using Covariance Rule for Two Presynaptic Neurons')
-fig.legend()
-plt.grid(True)
+# Title, grid, and legend for the second subplot
+ax2.set_title('Random Numbers with Principal Component')
+ax2.grid(True)
+ax2.legend()
+
+# Display the plot
+plt.suptitle('Weights and Constant currents for the Covariance Rule', fontsize=16)
 plt.show()
