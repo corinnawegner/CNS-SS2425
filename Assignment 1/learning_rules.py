@@ -4,11 +4,10 @@ class Neuron:
     def __init__(self, constant_current):
         self.constant_current = constant_current
         self.rate = constant_current
-        self.all_rates = [constant_current]
 
     def update_rate(self, presynaptic_weights, input_rates):
         self.rate = np.sum(np.array(presynaptic_weights)*np.array(input_rates)) + self.constant_current
-        self.all_rates.append(self.rate)
+        #self.all_rates.append(self.rate)
 
 class Synapse:
     def __init__(self, in_neuron, out_neuron, learning_rate, weight=0):
@@ -16,6 +15,8 @@ class Synapse:
         self.learning_rate = learning_rate
         self.in_neuron = in_neuron
         self.out_neuron = out_neuron
+        self.mean_rate_in = 0#self.in_neuron.rate # Only needed for Covariance rule
+        self.mean_rate_out = 0#self.out_neuron.rate
 
     def update_weight(self, learning_rule="hebb", delta_t=0.1):
         rate_in = self.in_neuron.rate
@@ -45,8 +46,14 @@ class Synapse:
 
     def covariance_rule(self, rate_in, rate_out, delta_t):
         q = 0.1
-        rate_i = q * self.out_neuron.all_rates[-1] + (1-q) * self.out_neuron.all_rates[-2]
-        rate_j = q * self.in_neuron.all_rates[-1] + (1-q) * self.in_neuron.all_rates[-2]
+        # Assuming the new mean rate has already been changed this time step
+        mean_rate_in_old = self.mean_rate_in
+        mean_rate_out_old = self.mean_rate_out
+        rate_i = q * self.out_neuron.rate + (1-q) * mean_rate_out_old
+        rate_j = q * self.in_neuron.rate + (1-q) * mean_rate_in_old
+        self.mean_rate_in = rate_j
+        self.mean_rate_out = rate_i
         delta_weight = self.learning_rate * (rate_out - rate_i) * (rate_in - rate_j) * delta_t
+        #print(mean_rate_in_old, mean_rate_out_old, rate_i, rate_j, delta_weight, self.out_neuron.rate, self.in_neuron.rate)
         return delta_weight
 

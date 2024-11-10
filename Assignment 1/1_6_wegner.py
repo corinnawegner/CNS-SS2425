@@ -39,33 +39,44 @@ for key, rn in dict_r.items():
         synapse_6b.update_weight()
 
         if t%2 == 0:
-            pre_neuron_6a.constant_current = random_numbers[int(t/2), 0]
-            pre_neuron_6b.constant_current = random_numbers[int(t/2), 1]
+            pre_neuron_6a.constant_current = rn[int(t/2), 0]
+            pre_neuron_6b.constant_current = rn[int(t/2), 1]
 
 
     df_data_6a = pd.DataFrame({"time": np.arange(0, 2000, 0.1), "weight_6a": list_weight_6a})
     df_data_6b = pd.DataFrame({"time": np.arange(0, 2000, 0.1), "weight_6b": list_weight_6b})
 
-    plt.figure(figsize=(12, 8))
-    #plt.plot(np.arange(0, 2000, 2), random_numbers[:,1], color="darkgrey", label= "Constant currents")
-    #plt.plot(np.arange(0, 2000, 2), random_numbers[:,0], color="lightgrey", label= "Constant currents")
-    #plt.plot([0,2000],[list_weight_6a[0], list_weight_6a[-1]], color = "black")
-    #plt.plot([0,2000],[list_weight_6b[0], list_weight_6b[-1]], color = "black")
-    #plt.plot(df_data_6a['time'], df_data_6a['weight_6a'], label='Synaptic Weight for Synapse 1', color='purple')
-    #plt.plot(df_data_6b['time'], df_data_6b['weight_6b'], label='Synaptic Weight for Synapse 2', color='orange')
-    plt.scatter(df_data_6a['weight_6a'], df_data_6b['weight_6b'], color='blue',label='Weights')
-    plt.scatter(random_numbers[:, 0], random_numbers[:, 1], label="random numbers", color="grey", alpha=0.5)
-
-    mean_num = np.mean(random_numbers, axis=0)
+    mean_num = np.mean(rn, axis=0)
     pca = PCA(n_components=1)
-    pca.fit(random_numbers)
+    pca.fit(rn)
     dir_var = pca.components_[0]
+
+    #plt.figure(figsize=(12, 8))
+    #plt.scatter(df_data_6a['weight_6a'], df_data_6b['weight_6b'], color='blue', label='Weights')
+    #plt.scatter(rn[:, 0], rn[:, 1], label="random numbers", color="grey", alpha=0.5)
+
+    fig, ax1 = plt.subplots()
+
+    # Plot the first dataset on the primary y-axis
+    ax1.scatter(df_data_6a['weight_6a'], df_data_6b['weight_6b'], color='blue', label='Weights')
+    ax1.set_xlabel('Weight 1')  # Label for x-axis
+    ax1.set_ylabel('Weight 2', color='blue')  # Label for primary y-axis
+    ax1.tick_params(axis='y', labelcolor='blue')
+
+    # Create the secondary y-axis
+    ax2 = ax1.twinx()
+
+    # Plot the second dataset on the secondary y-axis
+    ax2.scatter(rn[:, 0], rn[:, 1], label="Random Numbers", color="grey", alpha=0.5)
+    ax2.set_ylabel('Random Numbers', color='grey')  # Label for secondary y-axis
+    ax2.tick_params(axis='y', labelcolor='grey')
+
     plt.quiver(mean_num[0], mean_num[1], dir_var[0], dir_var[1],
-               angles='xy', scale_units='xy', scale=1, color='green', label="Smallest Variance Direction")
+               angles='xy', scale_units='xy', scale=1, color='green', label="Principal component")
 
     # Adding labels and title
-    plt.xlabel('Weight a')
-    plt.ylabel('Weight b')
+    #plt.xlabel('Weight 1')
+    #plt.ylabel('Weight 2')
     plt.title(f'Weights plotted against each other for {key}')
     plt.grid(True)
     plt.legend()
@@ -86,13 +97,14 @@ list_weight_6c = []
 list_weight_6d = []
 
 # Simulate for 100 seconds with 0.1s time step
-for t in np.arange(0, 100, 0.1):
+for t in np.arange(0, 2000, 0.1):
     if t % 2 == 0:
-        pre_neuron_6c.constant_current = random_numbers[int(t / 2), 0]
-        pre_neuron_6d.constant_current = random_numbers[int(t / 2), 1]
+        pre_neuron_6c.constant_current = random_numbers_4[int(t / 2), 0]
+        pre_neuron_6d.constant_current = random_numbers_4[int(t / 2), 1]
+        pre_neuron_6c.rate = random_numbers_4[int(t / 2), 0]
+        pre_neuron_6d.rate = random_numbers_4[int(t / 2), 1]
 
-    pre_neuron_6c.all_rates.append(pre_neuron_6c.constant_current)
-    pre_neuron_6d.all_rates.append(pre_neuron_6d.constant_current)
+#    print(pre_neuron_6c.rate, pre_neuron_6d.rate)
 
     list_weight_6c.append(synapse6c.weight)
     list_weight_6d.append(synapse6d.weight)
@@ -103,26 +115,53 @@ for t in np.arange(0, 100, 0.1):
         [pre_neuron_6c.rate, pre_neuron_6d.rate]
     )
 
-    # Update synapse weights using the Oja rule
+    # Update synapse weights using the covariance rule
     synapse6c.update_weight(learning_rule="cov")
     synapse6d.update_weight(learning_rule="cov")
 
-# Create DataFrame for synapse data
-df_data_6c = pd.DataFrame({"time": np.arange(0, 100, 0.1), "weight_6c": list_weight_6c})
-df_data_6d = pd.DataFrame({"time": np.arange(0, 100, 0.1), "weight_6d": list_weight_6d})
+df_data_6c = pd.DataFrame({"weight_6c": list_weight_6c})
+df_data_6d = pd.DataFrame({"weight_6d": list_weight_6d})
 
-# Plot the time course of weights for both synapses in Exercise 4
-plt.figure(figsize=(12, 8))
-#plt.plot(df_data_6c['time'], df_data_6c['weight_6c'], label='Synaptic Weight 6c', color='purple')
-#plt.plot(df_data_6d['time'], df_data_6d['weight_6d'], label='Synaptic Weight 6d', color='orange')
+# Calculate the mean and principal component for the random numbers
+mean_num = np.mean(random_numbers_4, axis=0)
+pca = PCA(n_components=1)
+pca.fit(random_numbers_4)
+dir_var = pca.components_[0]
 
-plt.scatter(df_data_6c['weight_6c'], df_data_6d['weight_6d'], color='blue', label='Weights')
-plt.scatter(random_numbers_4[:, 0], random_numbers_4[:, 1], label="random numbers", color="grey", alpha=0.5)
+# Create main figure and primary axis
+fig, ax1 = plt.subplots(figsize=(10, 10))
 
-# Adding labels and title
-plt.xlabel('Time')
-plt.ylabel('Weight')
+# Primary X-axis and Y-axis for weights
+ax1.scatter(df_data_6c['weight_6c'], df_data_6d['weight_6d'], color='blue', label='Weights')
+ax1.set_xlabel('Weight 1', color='blue')
+ax1.set_ylabel('Weight 2', color='blue')
+ax1.tick_params(axis='y', labelcolor='blue')
+
+# Create secondary axes for the random numbers
+ax3 = ax1.twiny()  # Secondary X-axis for random numbers
+ax4 = ax1.twinx()  # Secondary Y-axis for random numbers
+
+weight_6d_min, weight_6d_max = df_data_6d['weight_6d'].min(), df_data_6d['weight_6d'].max()
+#ax1.set_ylim(weight_6d_min , weight_6d_max)
+
+# Configure the secondary x- and y-axes specifically for random numbers
+ax3.set_xlabel('Random Numbers 1', color='grey')
+ax3.tick_params(axis='x', labelcolor='grey')
+ax4.set_ylabel('Random Numbers 2', color='grey')
+ax4.tick_params(axis='y', labelcolor='grey')
+
+#ax3.set_xlim(random_numbers_4[:, 0].min() - 1, random_numbers_4[:, 0].max() + 1)
+#ax4.set_ylim(random_numbers_4[:, 1].min() - 1, random_numbers_4[:, 1].max() + 1)
+
+# Plot the random numbers on their own x- and y-axes
+ax3.scatter(random_numbers_4[:, 0], random_numbers_4[:, 1], color="grey", alpha=0.5, label="Random Numbers")
+
+# Add PCA direction as a quiver plot on the random numbers' axes
+ax3.quiver(mean_num[0], mean_num[1], dir_var[0], dir_var[1],
+           angles='xy', scale_units='xy', scale=1, color='green', label="Principal component")
+
+# Title, grid, and legend
 plt.title('Weights plotted against each other using Covariance Rule for Two Presynaptic Neurons')
+fig.legend()
 plt.grid(True)
-plt.legend()
 plt.show()
