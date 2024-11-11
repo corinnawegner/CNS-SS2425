@@ -7,7 +7,6 @@ class Neuron:
 
     def update_rate(self, presynaptic_weights, input_rates):
         self.rate = np.sum(np.array(presynaptic_weights)*np.array(input_rates)) + self.constant_current
-        #self.all_rates.append(self.rate)
 
 class Synapse:
     def __init__(self, in_neuron, out_neuron, learning_rate, weight=0):
@@ -15,8 +14,8 @@ class Synapse:
         self.learning_rate = learning_rate
         self.in_neuron = in_neuron
         self.out_neuron = out_neuron
-        self.mean_rate_in = 0#self.in_neuron.rate # Only needed for Covariance rule
-        self.mean_rate_out = 0#self.out_neuron.rate
+        self.mean_rate_in = 0 # Only needed for Covariance rule
+        self.mean_rate_out = 0
 
     def update_weight(self, learning_rule="hebb", delta_t=0.1):
         rate_in = self.in_neuron.rate

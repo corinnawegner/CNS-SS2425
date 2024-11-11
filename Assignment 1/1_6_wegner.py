@@ -15,11 +15,6 @@ list_r = [random_numbers, random_numbers_2, random_numbers_3, random_numbers_4]
 vals_r = ["Phi: 0, Offset: (0,0)", "Phi: 20°, Offset: (0,0)", "Phi: 45, Offset: (0,0)", "Phi: -45°, Offset: (2,2)"]
 dict_r = {vals_r[i]: list_r[i] for i in range(len(vals_r))}
 
-import matplotlib.pyplot as plt
-from sklearn.decomposition import PCA
-import numpy as np
-import pandas as pd
-
 for key, rn in dict_r.items():
     # Initialize neurons and synapses
     pre_neuron_6a = Neuron(rn[0][0])
