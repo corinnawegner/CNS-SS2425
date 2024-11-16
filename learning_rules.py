@@ -8,7 +8,7 @@ class Neuron:
     def update_rate(self, presynaptic_weights, input_rates):
         self.rate = np.sum(np.array(presynaptic_weights)*np.array(input_rates)) + self.constant_current
 
-    def generate_spike_train(self, total_time, delta_t, mode = "periodic"):
+    def generate_spike_train(self, total_time, delta_t, delay = 0, mode = "periodic"):
         spike_train = []
         for i in range(0, total_time, delta_t):
             if mode == "periodic":
@@ -16,7 +16,7 @@ class Neuron:
                 spike_interval = int(1 / self.rate / delta_t)  # interval in number of steps
 
                 for i in range(0, total_time, delta_t):
-                    if (i // delta_t) % spike_interval == 0:  # Check if it's time for a spike
+                    if (i // delta_t) % spike_interval + delay == 0:  # Check if it's time for a spike
                         spike_train.append(1)
                     else:
                         spike_train.append(0)
@@ -73,20 +73,19 @@ class Synapse:
         #print(mean_rate_in_old, mean_rate_out_old, rate_i, rate_j, delta_weight, self.out_neuron.rate, self.in_neuron.rate)
         return delta_weight
 
-    def iso_rule(self, rate_in, rate_out, delta_t, total_time = 10):
+    def iso_rule(self, input_spike_train, output_spike_train, t, delta_t):
         H = 0.2
         alpha = 1/20 * 10**2
         beta = 1/2 * 10**2
         h = lambda t: H * (np.exp(-alpha*t)-np.exp(-beta*t)) if t > 0 else 0
 
-        input_spike_train = self.in_neuron.generate_spike_train(total_time, delta_t)
-        h_sequence = [h(t) for t in range(0, total_time, delta_t)]
-        u = np.convolve(input_spike_train, h_sequence)
+        t_tot = len(input_spike_train)/delta_t
 
-        output_spike_train = self.out_neuron.generate_spike_train(total_time, delta_t)
+        h_sequence = [h(t) for t in range(0, t_tot, delta_t)]
+        u = np.convolve(input_spike_train, h_sequence)
         h_out = np.convolve(output_spike_train, h_sequence) #Todo: is this necessary?
 
         dv = np.gradient(h_out)
 
-        delta_weight = self.learning_rate * np.dot(dv, u) * delta_t
+        delta_weight = self.learning_rate * dv[t*delta_t] * u[t*delta_t] * delta_t
         return delta_weight
