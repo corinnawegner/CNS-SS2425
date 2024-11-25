@@ -20,6 +20,8 @@ post_neuron = Neuron(0)
 synapse_1 = Synapse(neuron_1, post_neuron, learning_rate)
 synapse_2 = Synapse(neuron_2, post_neuron, learning_rate, weight=1)
 
+neuron_2.generate_spike_train(dt)
+
 list_t = np.linspace(0, tmax, int(tmax/dt))
 list_weight = []
 
@@ -39,6 +41,8 @@ neuron_4 = Neuron(5, total_spiking_time = 4, delay = 0.004) # not learning, Spik
 post_neuron_2 = Neuron(0)
 synapse_3 = Synapse(neuron_3, post_neuron_2, learning_rate)
 synapse_4 = Synapse(neuron_4, post_neuron_2, learning_rate, weight=1)
+
+neuron_4.generate_spike_train(dt)
 
 list_weight = []
 
