@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 class Neuron:
-    def __init__(self, constant_current, mode = "periodic", total_spiking_time = 10, delay = 0):
+    def __init__(self, constant_current, mode = "periodic", total_spiking_time = 10, delay = 0, stop_after = None):
         self.constant_current = constant_current
         self.rate = constant_current
         # Needed for ISO rule, generated via generate_spike_train():
@@ -12,9 +12,21 @@ class Neuron:
         self.mode = mode
         self.total_spiking_time = total_spiking_time
         self.delay = delay
+        self.stop_after = stop_after
 
     def update_rate(self, presynaptic_weights, input_rates):
         self.rate = np.sum(np.array(presynaptic_weights)*np.array(input_rates)) + self.constant_current
+
+    def generate_output_spike_train(self, presynaptic_weights, input_spike_trains):
+        """
+        Creates a spike train as a response of input spike trains weighted by the synaptical weight.
+        :param presynaptic_weights: weights of input synapses
+        :param input_spike_trains: convolved spike trains from the input neurons
+        :return: Updates the spike train and derived spike train
+        """
+        output = np.sum(np.array([input_spike_trains[i]*presynaptic_weights[i] for i in range(len(input_spike_trains))]), axis=0)
+        self.spike_train = output
+        self.derived_spike_train = np.gradient(self.spike_train)
 
     def generate_spike_train(self, delta_t):
         len_train = int(self.total_spiking_time/delta_t) # correct
@@ -23,13 +35,15 @@ class Neuron:
         if self.mode == "periodic":
             for i in range(0, len_train, spike_interval):
                 i_delay = i + int(self.delay / delta_t)
+                if self.stop_after is not None and self.stop_after < i_delay*delta_t:
+                        break
                 spike_train[i_delay] = 1
 
         #print(self.rate*self.total_spiking_time==np.sum(spike_train))
         self.spike_train = spike_train
         input_trace = np.array([double_exponential(t) for t in np.linspace(0, 2, int(2/delta_t))])
         self.convolved_spike_train = np.convolve(self.spike_train, input_trace)
-        self.derived_spike_train = np.gradient(self.spike_train)
+        #self.derived_spike_train = np.gradient(self.spike_train) Todo: How to get the output spike train?
 
         # Plotting the spike train
         plt.figure(figsize=(10, 4))
@@ -41,7 +55,6 @@ class Neuron:
         plt.legend()
         plt.grid(True)
         plt.show()
-
 
 class Synapse:
     def __init__(self, in_neuron, out_neuron, learning_rate, weight=0):
@@ -97,9 +110,9 @@ class Synapse:
 
     def iso_rule(self, t, delta_t):
         if self.in_neuron.convolved_spike_train is None:
-            self.in_neuron.generate_spike_train(delta_t, )
-        if self.out_neuron.derived_spike_train is None:
-            self.out_neuron.generate_spike_train(delta_t)
+            self.in_neuron.generate_spike_train(delta_t)
+       # if self.out_neuron.derived_spike_train is None:
+        #    self.out_neuron.generate_output_spike_train(presynaptic_weights, input_spike_trains)
         u = self.in_neuron.convolved_spike_train
         dv = self.out_neuron.derived_spike_train
 
