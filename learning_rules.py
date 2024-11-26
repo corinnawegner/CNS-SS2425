@@ -5,6 +5,7 @@ class Neuron:
     def __init__(self, constant_current, mode = "periodic", total_spiking_time = 10, delay = 0, stop_after = None):
         self.constant_current = constant_current
         self.rate = constant_current
+        self.in_synapsis = []
         # Needed for ISO rule, generated via generate_spike_train():
         self.spike_train = None
         self.convolved_spike_train = None
@@ -13,6 +14,7 @@ class Neuron:
         self.total_spiking_time = total_spiking_time
         self.delay = delay
         self.stop_after = stop_after
+        self.inputs = [] # input spike trains coming from preceding Neurons
 
     def update_rate(self, presynaptic_weights, input_rates):
         self.rate = np.sum(np.array(presynaptic_weights)*np.array(input_rates)) + self.constant_current
@@ -28,7 +30,7 @@ class Neuron:
         self.spike_train = output
         self.derived_spike_train = np.gradient(self.spike_train)
 
-    def generate_spike_train(self, delta_t):
+    def generate_spike_train(self, delta_t, plot_spike = False):
         len_train = int(self.total_spiking_time/delta_t) # correct
         spike_interval = int(1/(self.rate*delta_t))
         spike_train = np.zeros(len_train)
@@ -45,16 +47,17 @@ class Neuron:
         self.convolved_spike_train = np.convolve(self.spike_train, input_trace)
         #self.derived_spike_train = np.gradient(self.spike_train) Todo: How to get the output spike train?
 
-        # Plotting the spike train
-        plt.figure(figsize=(10, 4))
-        time = np.arange(0, self.total_spiking_time, delta_t)
-        plt.plot(time, self.spike_train, drawstyle='steps-post', label='Spike Train')
-        plt.title(f'Spike Train for delay: {self.delay}')
-        plt.xlabel('Time (s)')
-        plt.ylabel('Spike (binary)')
-        plt.legend()
-        plt.grid(True)
-        plt.show()
+        if plot_spike == True:
+            # Plotting the spike train
+            plt.figure(figsize=(10, 4))
+            time = np.arange(0, self.total_spiking_time, delta_t)
+            plt.plot(time, self.spike_train, drawstyle='steps-post', label='Spike Train')
+            plt.title(f'Spike Train for delay: {self.delay}')
+            plt.xlabel('Time (s)')
+            plt.ylabel('Spike (binary)')
+            plt.legend()
+            plt.grid(True)
+            plt.show()
 
 class Synapse:
     def __init__(self, in_neuron, out_neuron, learning_rate, weight=0):
@@ -66,6 +69,10 @@ class Synapse:
         self.mean_rate_out = 0
         #self.convolved_input = self.in_neuron.spike_train
         self.output_spike_train = self.out_neuron.spike_train
+        in_neuron.in_synapsis.append(self)
+
+    def parse_spike_train(self):
+        self.out_neuron.inputs.append(self.in_neuron.convolved_spike_train)
 
     def update_weight(self, learning_rule="hebb", delta_t=0.1, t=0):
         rate_in = self.in_neuron.rate
@@ -80,6 +87,8 @@ class Synapse:
             self.weight += self.covariance_rule(rate_in, rate_out, delta_t)
         elif learning_rule == "iso":
             self.weight += self.iso_rule(t, delta_t)
+        elif learning_rule == "ico":
+            self.weight += self.ico_rule(t, delta_t)
         else:
             raise ValueError(f"Unknown learning rule: {learning_rule}")
 
@@ -120,6 +129,20 @@ class Synapse:
         #print("t_int", t_int)
 
         delta_weight = self.learning_rate * dv[t_int] * u[t_int] * delta_t
+        return delta_weight
+
+    def ico_rule(self, t, delta_t):
+        if self.in_neuron.convolved_spike_train is None:
+            self.in_neuron.generate_spike_train(delta_t)
+        if not self.out_neuron.inputs:
+            self.out_neuron.in_synapsis[0].parse_spike_train() #Todo: select correct synapse which is not self
+        u = self.in_neuron.convolved_spike_train
+        t_int = int(t / delta_t) - 1
+
+        u_const = self.out_neuron.inputs[0]
+        d_u_const = np.gradient(u_const)
+
+        delta_weight = self.learning_rate * d_u_const[0] * u[t_int] * delta_t
         return delta_weight
 
 def double_exponential(t):
