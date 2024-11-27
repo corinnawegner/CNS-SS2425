@@ -45,7 +45,6 @@ class Neuron:
         self.spike_train = spike_train
         input_trace = np.array([double_exponential(t) for t in np.linspace(0, 2, int(2/delta_t))])
         self.convolved_spike_train = np.convolve(self.spike_train, input_trace)
-        #self.derived_spike_train = np.gradient(self.spike_train) Todo: How to get the output spike train?
 
         if plot_spike == True:
             # Plotting the spike train
@@ -69,7 +68,9 @@ class Synapse:
         self.mean_rate_out = 0
         #self.convolved_input = self.in_neuron.spike_train
         self.output_spike_train = self.out_neuron.spike_train
-        in_neuron.in_synapsis.append(self)
+        out_neuron.in_synapsis.append(self)
+        #print(self)
+        #print(in_neuron.in_synapsis)
 
     def parse_spike_train(self):
         self.out_neuron.inputs.append(self.in_neuron.convolved_spike_train)
@@ -135,14 +136,18 @@ class Synapse:
         if self.in_neuron.convolved_spike_train is None:
             self.in_neuron.generate_spike_train(delta_t)
         if not self.out_neuron.inputs:
-            self.out_neuron.in_synapsis[0].parse_spike_train() #Todo: select correct synapse which is not self
+            #print(self.out_neuron.in_synapsis)
+            for synapse in self.out_neuron.in_synapsis:
+                if synapse is not self:
+                    synapse.parse_spike_train()
+            #self.out_neuron.in_synapsis[0].parse_spike_train() #Todo: select correct synapse which is not self
         u = self.in_neuron.convolved_spike_train
         t_int = int(t / delta_t) - 1
 
         u_const = self.out_neuron.inputs[0]
         d_u_const = np.gradient(u_const)
 
-        delta_weight = self.learning_rate * d_u_const[0] * u[t_int] * delta_t
+        delta_weight = self.learning_rate * d_u_const[t_int] * u[t_int] * delta_t
         return delta_weight
 
 def double_exponential(t):
