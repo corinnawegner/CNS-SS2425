@@ -1,8 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+
 class Neuron:
-    def __init__(self, constant_current, mode = "periodic", total_spiking_time = 10, delay = 0, stop_after = None):
+    def __init__(self, constant_current, mode="periodic", total_spiking_time=10, delay=0, stop_after=None):
         self.constant_current = constant_current
         self.rate = constant_current
         self.in_synapsis = []
@@ -14,10 +15,10 @@ class Neuron:
         self.total_spiking_time = total_spiking_time
         self.delay = delay
         self.stop_after = stop_after
-        self.inputs = [] # input spike trains coming from preceding Neurons
+        self.inputs = []  # input spike trains coming from preceding Neurons
 
     def update_rate(self, presynaptic_weights, input_rates):
-        self.rate = np.sum(np.array(presynaptic_weights)*np.array(input_rates)) + self.constant_current
+        self.rate = np.sum(np.array(presynaptic_weights) * np.array(input_rates)) + self.constant_current
 
     def generate_output_spike_train(self, presynaptic_weights, input_spike_trains):
         """
@@ -26,24 +27,28 @@ class Neuron:
         :param input_spike_trains: convolved spike trains from the input neurons
         :return: Updates the spike train and derived spike train
         """
-        output = np.sum(np.array([input_spike_trains[i]*presynaptic_weights[i] for i in range(len(input_spike_trains))]), axis=0)
+        output = np.sum(np.array([input_spike_trains[i] * presynaptic_weights[i] for i in range(len(input_spike_trains))]), axis=0)
         self.spike_train = output
         self.derived_spike_train = np.gradient(self.spike_train)
 
     def generate_spike_train(self, delta_t, plot_spike = False):
-        len_train = int(self.total_spiking_time/delta_t) # correct
-        spike_interval = int(1/(self.rate*delta_t))
+        len_train = int(self.total_spiking_time / delta_t)
+        spike_interval = int(1 / (self.rate * delta_t))
         spike_train = np.zeros(len_train)
         if self.mode == "periodic":
             for i in range(0, len_train, spike_interval):
                 i_delay = i + int(self.delay / delta_t)
-                if self.stop_after is not None and self.stop_after < i_delay*delta_t:
-                        break
+                if self.stop_after is not None and self.stop_after < i_delay * delta_t:
+                    break
                 spike_train[i_delay] = 1
+        elif self.mode == "single":
+            spike_train[0] = 1
+        else:
+            raise ValueError(f"Unknown spike mode {self.mode}")
 
-        #print(self.rate*self.total_spiking_time==np.sum(spike_train))
+        # print(self.rate*self.total_spiking_time==np.sum(spike_train))
         self.spike_train = spike_train
-        input_trace = np.array([double_exponential(t) for t in np.linspace(0, 2, int(2/delta_t))])
+        input_trace = np.array([double_exponential(t) for t in np.linspace(0, 2, int(2 / delta_t))])
         self.convolved_spike_train = np.convolve(self.spike_train, input_trace)
 
         if plot_spike == True:
@@ -58,19 +63,20 @@ class Neuron:
             plt.grid(True)
             plt.show()
 
+
 class Synapse:
     def __init__(self, in_neuron, out_neuron, learning_rate, weight=0):
         self.weight = weight
         self.learning_rate = learning_rate
         self.in_neuron = in_neuron
         self.out_neuron = out_neuron
-        self.mean_rate_in = 0 # Only needed for Covariance rule
+        self.mean_rate_in = 0  # Only needed for Covariance rule
         self.mean_rate_out = 0
-        #self.convolved_input = self.in_neuron.spike_train
+        # self.convolved_input = self.in_neuron.spike_train
         self.output_spike_train = self.out_neuron.spike_train
         out_neuron.in_synapsis.append(self)
-        #print(self)
-        #print(in_neuron.in_synapsis)
+        # print(self)
+        # print(in_neuron.in_synapsis)
 
     def parse_spike_train(self):
         self.out_neuron.inputs.append(self.in_neuron.convolved_spike_train)
@@ -102,7 +108,7 @@ class Synapse:
         return delta_weight
 
     def oja_rule(self, rate_in, rate_out, delta_t):
-        delta_weight = self.learning_rate*(rate_in * rate_out - self.weight * rate_out**2) * delta_t
+        delta_weight = self.learning_rate * (rate_in * rate_out - self.weight * rate_out ** 2) * delta_t
         return delta_weight
 
     def covariance_rule(self, rate_in, rate_out, delta_t):
@@ -110,24 +116,24 @@ class Synapse:
         # Assuming the new mean rate has already been changed this time step
         mean_rate_in_old = self.mean_rate_in
         mean_rate_out_old = self.mean_rate_out
-        rate_i = q * self.out_neuron.rate + (1-q) * mean_rate_out_old
-        rate_j = q * self.in_neuron.rate + (1-q) * mean_rate_in_old
+        rate_i = q * self.out_neuron.rate + (1 - q) * mean_rate_out_old
+        rate_j = q * self.in_neuron.rate + (1 - q) * mean_rate_in_old
         self.mean_rate_in = rate_j
         self.mean_rate_out = rate_i
         delta_weight = self.learning_rate * (rate_out - rate_i) * (rate_in - rate_j) * delta_t
-        #print(mean_rate_in_old, mean_rate_out_old, rate_i, rate_j, delta_weight, self.out_neuron.rate, self.in_neuron.rate)
+        # print(mean_rate_in_old, mean_rate_out_old, rate_i, rate_j, delta_weight, self.out_neuron.rate, self.in_neuron.rate)
         return delta_weight
 
     def iso_rule(self, t, delta_t):
         if self.in_neuron.convolved_spike_train is None:
             self.in_neuron.generate_spike_train(delta_t)
-       # if self.out_neuron.derived_spike_train is None:
+        # if self.out_neuron.derived_spike_train is None:
         #    self.out_neuron.generate_output_spike_train(presynaptic_weights, input_spike_trains)
         u = self.in_neuron.convolved_spike_train
         dv = self.out_neuron.derived_spike_train
 
-        t_int = int(t/delta_t) - 1
-        #print("t_int", t_int)
+        t_int = int(t / delta_t) - 1
+        # print("t_int", t_int)
 
         delta_weight = self.learning_rate * dv[t_int] * u[t_int] * delta_t
         return delta_weight
@@ -136,11 +142,11 @@ class Synapse:
         if self.in_neuron.convolved_spike_train is None:
             self.in_neuron.generate_spike_train(delta_t)
         if not self.out_neuron.inputs:
-            #print(self.out_neuron.in_synapsis)
+            # print(self.out_neuron.in_synapsis)
             for synapse in self.out_neuron.in_synapsis:
                 if synapse is not self:
                     synapse.parse_spike_train()
-            #self.out_neuron.in_synapsis[0].parse_spike_train() #Todo: select correct synapse which is not self
+            # self.out_neuron.in_synapsis[0].parse_spike_train() #Todo: select correct synapse which is not self
         u = self.in_neuron.convolved_spike_train
         t_int = int(t / delta_t) - 1
 
@@ -150,12 +156,14 @@ class Synapse:
         delta_weight = self.learning_rate * d_u_const[t_int] * u[t_int] * delta_t
         return delta_weight
 
+
 def double_exponential(t):
     H = 0.2
-    alpha = 1 / 20 * 10 ** 2
-    beta = 1 / 2 * 10 ** 2
-    #h_sequence = [double_exponential(t) for t in np.arange(0, 10, 100)]
-    return H * (np.exp(-alpha*t)-np.exp(-beta*t)) if t > 0 else 0#, h_sequence
+    alpha = 1 / 20 * 10 ** 3
+    beta = 1 / 2 * 10 ** 3
+    # h_sequence = [double_exponential(t) for t in np.arange(0, 10, 100)]
+    return H * (np.exp(-alpha * t) - np.exp(-beta * t)) if t > 0 else 0  # , h_sequence
+
 
 """
 time = np.linspace(0,2, 1000)

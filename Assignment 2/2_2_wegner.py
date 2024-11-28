@@ -25,7 +25,7 @@ for t in list_t:
     synapse_1.update_weight(learning_rule='ico', delta_t=dt, t=t)
 
 plt.plot(list_t, list_weight)
-plt.title("Weight change for Synapse 1 with delay -0.004")
+plt.title("Weight change for Synapse 1 with delay -0.004 using ICO rule")
 plt.xlabel("Time")
 plt.ylabel("Weight")
 plt.show()
@@ -48,7 +48,7 @@ for t in list_t:
     synapse_3.update_weight(learning_rule='ico', delta_t=dt, t=t)
 
 plt.plot(list_t, list_weight)
-plt.title("Weight change for Synapse 1 with delay 0.004")
+plt.title("Weight change for Synapse 1 with delay 0.004 using ICO rule")
 plt.xlabel("Time")
 plt.ylabel("Weight")
 plt.show()
