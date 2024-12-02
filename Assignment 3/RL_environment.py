@@ -17,32 +17,32 @@ class RL_environment():
             self.pos[0] -= 1
         else:
             self.pos[0] = self.width - 1
-        self.positions.append(tuple(self.pos))  # Store as tuple
+        self.positions.append(tuple(self.pos))
 
     def move_right(self):
         if self.pos[0] < self.width - 1:
             self.pos[0] += 1
         else:
             self.pos[0] = 0
-        self.positions.append(tuple(self.pos))  # Store as tuple
+        self.positions.append(tuple(self.pos))
 
     def move_up(self):
         if self.pos[1] > 0:
             self.pos[1] -= 1
         else:
             self.pos[1] = self.height - 1
-        self.positions.append(tuple(self.pos))  # Store as tuple
+        self.positions.append(tuple(self.pos))
 
     def move_down(self):
         if self.pos[1] < self.height - 1:
             self.pos[1] += 1
         else:
             self.pos[1] = 0
-        self.positions.append(tuple(self.pos))  # Store as tuple
+        self.positions.append(tuple(self.pos))
 
     def back_to_start_position(self):
-        self.pos = np.copy(self.pos_start)  # Reset to start
-        self.positions = [tuple(self.pos_start)]  # Reset positions
+        self.pos = np.copy(self.pos_start)
+        self.positions = [tuple(self.pos_start)]
 
     def epsilon_step(self, epsilon):
         actions = ["u", "d", "r", "l"]
@@ -91,6 +91,7 @@ class RL_environment():
         update_factor = self.reward_function[self.pos[0], self.pos[1]] + discount_rate * max_q - self.values[position[0], position[1], z]
         self.values[position[0], position[1], z] += learning_rate * update_factor
 
+
 def create_environment(width, height):
     goal_state = int(width/2), int(height/2)
     rf = np.zeros((width, height))
@@ -98,7 +99,7 @@ def create_environment(width, height):
     env = RL_environment(width, height, goal_state, rf)
     return env
 
-# Define function to plot the results
+
 def plot_results(env):
     # Extract Q_max(s) values
     Q_max = np.max(env.values, axis=2)
