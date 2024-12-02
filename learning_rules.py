@@ -7,6 +7,7 @@ class Neuron:
         self.constant_current = constant_current
         self.rate = constant_current
         self.in_synapsis = []
+        self.rates = [constant_current]
         # Needed for ISO rule, generated via generate_spike_train():
         self.spike_train = None
         self.convolved_spike_train = None
@@ -19,6 +20,7 @@ class Neuron:
 
     def update_rate(self, presynaptic_weights, input_rates):
         self.rate = np.sum(np.array(presynaptic_weights) * np.array(input_rates)) + self.constant_current
+        self.rates.append(self.rate)
 
     def generate_output_spike_train(self, presynaptic_weights, input_spike_trains):
         """
@@ -33,7 +35,10 @@ class Neuron:
 
     def generate_spike_train(self, delta_t, plot_spike = False):
         len_train = int(self.total_spiking_time / delta_t)
-        spike_interval = int(1 / (self.rate * delta_t))
+        if self.rate != 0:
+            spike_interval = int(1 / (self.rate * delta_t))
+        else:
+            spike_interval = 0
         spike_train = np.zeros(len_train)
         if self.mode == "periodic":
             for i in range(0, len_train, spike_interval):
@@ -96,6 +101,8 @@ class Synapse:
             self.weight += self.iso_rule(t, delta_t)
         elif learning_rule == "ico":
             self.weight += self.ico_rule(t, delta_t)
+        elif learning_rule == "ico2":
+            self.weight += self.ico_with_rates(rate_in, delta_t)
         else:
             raise ValueError(f"Unknown learning rule: {learning_rule}")
 
@@ -156,6 +163,17 @@ class Synapse:
         delta_weight = self.learning_rate * d_u_const[t_int] * u[t_int] * delta_t
         return delta_weight
 
+    def ico_with_rates(self, rate_in, delta_t):
+
+        for synapse in self.out_neuron.in_synapsis:
+            if synapse is not self:
+                rate_in_other_new = synapse.in_neuron.rate
+                rate_in_other_old = synapse.in_neuron.rates[-2]
+
+        dt_rate_other = rate_in_other_new - rate_in_other_old
+
+        delta_weight = self.learning_rate * dt_rate_other * rate_in * delta_t
+        return delta_weight
 
 def double_exponential(t):
     H = 0.2
