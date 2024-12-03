@@ -1,14 +1,3 @@
-"""
-For delays d ∈ [−0.1s,0.1s] and steps of dt determine the weight change of w1 after one spike. Choose a
- simulation time which allows you to approximately integrate over the whole pre- and postsynaptic traces
- and justify your choice in the protocol.
- Plot the final weight change for a single spike depending on the delay d (Note: Do not plot the time
- course of the weights). Add this plot to the protocol.
-In your protocol, compare this curve to the experimentally found biological weight changes due to spike
-timing-dependent plasticity (see lecture, Bi and Poo, J Neuroscience, 1998). Also, discuss between which
- signals the time differences were measured. Are the weight change curves comparable?
-"""
-
 from learning_rules import Neuron, Synapse
 import numpy as np
 import matplotlib.pyplot as plt
@@ -21,7 +10,6 @@ list_d = np.linspace(-0.1,0.1, 20)
 list_weights = []
 
 for d in list_d:
-
     neuron_1 = Neuron(5, total_spiking_time = tmax)
     neuron_2 = Neuron(5, total_spiking_time = tmax, delay = d)
     post_neuron = Neuron(0)

@@ -20,7 +20,6 @@ list_weight = []
 
 for t in list_t:
     list_weight.append(synapse_1.weight)
-    #post_neuron.update_rate([synapse_1.weight, synapse_2.weight], [neuron_1.rate, neuron_2.rate])
     post_neuron.generate_output_spike_train([synapse_1.weight, synapse_2.weight], [neuron_1.convolved_spike_train, neuron_2.convolved_spike_train])
     synapse_1.update_weight(learning_rule='ico', delta_t=dt, t=t)
 
@@ -43,7 +42,6 @@ list_weight = []
 
 for t in list_t:
     list_weight.append(synapse_3.weight)
-    #post_neuron_2.update_rate([synapse_3.weight, synapse_4.weight], [neuron_3.rate, neuron_4.rate])
     post_neuron_2.generate_output_spike_train([synapse_3.weight, synapse_4.weight], [neuron_3.convolved_spike_train, neuron_4.convolved_spike_train])
     synapse_3.update_weight(learning_rule='ico', delta_t=dt, t=t)
 
