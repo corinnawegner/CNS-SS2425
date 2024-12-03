@@ -106,8 +106,6 @@ class Synapse:
         self.out_neuron = out_neuron # Neuron following the synapse
         self.mean_rate_in = 0  # Only needed for Covariance rule
         self.mean_rate_out = 0
-        # self.convolved_input = self.in_neuron.spike_train
-        #self.output_spike_train = self.out_neuron.spike_train # Spike train of the output neuron
         out_neuron.in_synapsis.append(self) # Add itself to the list of incoming synapses from the Neuron following self
 
 
@@ -214,7 +212,7 @@ class Synapse:
 
         t_int = int(t / delta_t) - 1 # Compute index of the current simulation time within the array
 
-        delta_weight = self.learning_rate * dv[t_int] * u[t_int] * delta_t
+        delta_weight = self.learning_rate * dv[t_int] * u[t_int]
         return delta_weight
 
     def ico_rule(self, t, delta_t):
@@ -238,7 +236,7 @@ class Synapse:
         u_const = self.out_neuron.inputs[0]
         d_u_const = [u_const[i] - u_const[i-1] for i in range(1, len(u_const))] # Derive spike train from parallel input Neuron
 
-        delta_weight = self.learning_rate * d_u_const[t_int] * u[t_int] * delta_t
+        delta_weight = self.learning_rate * d_u_const[t_int] * u[t_int]
         return delta_weight
 
     def ico_with_rates(self, rate_in, delta_t):

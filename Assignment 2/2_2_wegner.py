@@ -25,7 +25,8 @@ for delay in [-0.04, 0.04]:
 
     for t in list_t:
         list_weight.append(synapse_1.weight)
-        post_neuron.generate_output_spike_train([synapse_1.weight, synapse_2.weight], [neuron_1.convolved_spike_train, neuron_2.convolved_spike_train])
+        post_neuron.generate_output_spike_train([synapse_1.weight, synapse_2.weight],
+                                                [neuron_1.convolved_spike_train, neuron_2.convolved_spike_train])
         synapse_1.update_weight(learning_rule='ico', delta_t=dt, t=t)
 
     plt.plot(list_t, list_weight)
