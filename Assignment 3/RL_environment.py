@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 class RL_environment():
-    def __init__(self, width, height, goal_state, reward_function, pos_start=np.array([0, 0])):
+    def __init__(self, width, height, goal_state, reward_function, pos_start=np.array([0, 0]), learning_mode = "Q-Learning"):
         self.width = width
         self.height = height
         self.goal_state = goal_state
@@ -11,6 +11,7 @@ class RL_environment():
         self.pos = np.copy(pos_start)
         self.positions = [tuple(pos_start)]  # Store as tuple for immutability
         self.values = np.zeros((width, height, 4))
+        self.mode = learning_mode
 
     def move_left(self):
         if self.pos[0] > 0:
@@ -44,6 +45,16 @@ class RL_environment():
         self.pos = np.copy(self.pos_start)
         self.positions = [tuple(self.pos_start)]
 
+    def action_to_step(self, action):
+        if action == "u":
+            self.move_up()
+        elif action == "d":
+            self.move_down()
+        elif action == "r":
+            self.move_right()
+        elif action == "l":
+            self.move_left()
+
     def epsilon_step(self, epsilon):
         actions = ["u", "d", "r", "l"]
         random_number = np.random.random()
@@ -55,14 +66,12 @@ class RL_environment():
             max_value_indices = np.where(current_state_values == np.max(current_state_values))[0]
             step = np.random.choice([actions[i] for i in max_value_indices])
 
-        if step == "u":
-            self.move_up()
-        elif step == "d":
-            self.move_down()
-        elif step == "r":
-            self.move_right()
-        elif step == "l":
-            self.move_left()
+        self.action_to_step(step)
+
+    def softmax_step(self, epsilon):
+        T = epsilon/(1-epsilon)
+        #Todo: implement softmax policy
+
 
     def last_action(self):
         state_diff = np.array(self.positions[-1]) - np.array(self.positions[-2])
@@ -87,16 +96,22 @@ class RL_environment():
             z = 3
         discount_rate = 0.7
         learning_rate = 0.1
-        max_q = np.max(self.values[self.pos[0], self.pos[1]])
-        update_factor = self.reward_function[self.pos[0], self.pos[1]] + discount_rate * max_q - self.values[position[0], position[1], z]
-        self.values[position[0], position[1], z] += learning_rate * update_factor
+        if self.mode == "Q-Learning":
+            max_q = np.max(self.values[self.pos[0], self.pos[1]])
+            update_factor = self.reward_function[self.pos[0], self.pos[1]] + discount_rate * max_q - self.values[position[0], position[1], z]
+            self.values[position[0], position[1], z] += learning_rate * update_factor
+        elif self.mode == "SARSA":
+            blabla = 0 #Todo: How is the action of this value determined?
+            update_factor = self.reward_function[self.pos[0], self.pos[1]] + discount_rate * blabla - self.values[position[0], position[1], z]
+            self.values[position[0], position[1], z] += learning_rate * update_factor
 
 
-def create_environment(width, height):
+
+def create_environment(width, height, learning_mode = "Q-Learning"):
     goal_state = int(width/2), int(height/2)
     rf = np.zeros((width, height))
     rf[goal_state[0], goal_state[1]] = 100
-    env = RL_environment(width, height, goal_state, rf)
+    env = RL_environment(width, height, goal_state, rf, learning_mode=learning_mode)
     return env
 
 
@@ -126,3 +141,6 @@ def plot_results(env):
     plt.ylabel("Height")
     plt.legend()
     plt.show()
+
+def exponential_decay(n, A, B, lam):
+    return A*np.exp(-n/lam) + B
