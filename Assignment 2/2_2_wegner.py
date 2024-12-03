@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 dt = 0.001
-learning_rate = 0.01
+learning_rate = 0.1
 tmax = 10
 
 neuron_1 = Neuron(5, total_spiking_time = tmax)
@@ -25,13 +25,13 @@ for t in list_t:
     synapse_1.update_weight(learning_rule='ico', delta_t=dt, t=t)
 
 plt.plot(list_t, list_weight)
-plt.title("Weight change for Synapse 1 with delay -0.004 using ICO rule")
+plt.title("Weight change for Synapse 1 with delay -0.04 using ICO rule")
 plt.xlabel("Time")
 plt.ylabel("Weight")
 plt.show()
 
 neuron_3 = Neuron(5, total_spiking_time = tmax)
-neuron_4 = Neuron(5, total_spiking_time = 10, delay = 0.004, stop_after=4) # not learning, Spike train with d = -40 ms
+neuron_4 = Neuron(5, total_spiking_time = 10, delay = 0.04, stop_after=4) # not learning, Spike train with d = -40 ms
 post_neuron_2 = Neuron(0)
 synapse_3 = Synapse(neuron_3, post_neuron_2, learning_rate)
 synapse_4 = Synapse(neuron_4, post_neuron_2, learning_rate, weight=1)

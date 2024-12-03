@@ -31,7 +31,7 @@ class Neuron:
         """
         output = np.sum(np.array([input_spike_trains[i] * presynaptic_weights[i] for i in range(len(input_spike_trains))]), axis=0)
         self.spike_train = output
-        self.derived_spike_train = np.gradient(self.spike_train)
+        self.derived_spike_train = [output[i] - output[i-1] for i in range(1, len(output))]
 
     def generate_spike_train(self, delta_t, plot_spike = False):
         len_train = int(self.total_spiking_time / delta_t)
@@ -153,12 +153,11 @@ class Synapse:
             for synapse in self.out_neuron.in_synapsis:
                 if synapse is not self:
                     synapse.parse_spike_train()
-            # self.out_neuron.in_synapsis[0].parse_spike_train() #Todo: select correct synapse which is not self
         u = self.in_neuron.convolved_spike_train
         t_int = int(t / delta_t) - 1
 
         u_const = self.out_neuron.inputs[0]
-        d_u_const = np.gradient(u_const)
+        d_u_const = [u_const[i] - u_const[i-1] for i in range(1, len(u_const))]
 
         delta_weight = self.learning_rate * d_u_const[t_int] * u[t_int] * delta_t
         return delta_weight

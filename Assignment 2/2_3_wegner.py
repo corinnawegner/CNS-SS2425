@@ -14,7 +14,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 dt = 0.001
-learning_rate = 0.01
+learning_rate = 0.1
 tmax = 2
 
 list_d = np.linspace(-0.1,0.1, 20)
