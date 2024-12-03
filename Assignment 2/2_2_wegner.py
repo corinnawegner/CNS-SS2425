@@ -34,3 +34,5 @@ for delay in [-0.04, 0.04]:
     plt.xlabel("Time")
     plt.ylabel("Weight")
     plt.show()
+
+

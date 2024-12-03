@@ -43,3 +43,9 @@ for delay in [-0.04, 0.04]:
     plt.xlabel("Time")
     plt.ylabel("Weight")
     plt.show()
+
+    plt.plot(list_t[4001:], list_weight[4001:])
+    plt.title(f"Weight change for Synapse 1 with delay {delay} using ICO rule, zoomed in")
+    plt.xlabel("Time")
+    plt.ylabel("Weight")
+    plt.show()
