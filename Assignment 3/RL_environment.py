@@ -11,6 +11,7 @@ class RL_environment():
         self.pos = np.copy(pos_start)
         self.positions = [tuple(pos_start)]  # Store as tuple for immutability
         self.values = np.zeros((width, height, 4))
+        self.action_hist = []
         self.mode = learning_mode
 
     def move_left(self):
@@ -55,7 +56,39 @@ class RL_environment():
         elif action == "l":
             self.move_left()
 
-    def epsilon_step(self, epsilon):
+    def compute_new_position(self, action):
+        if action == "u":
+            if self.pos[1] > 0:
+                shift = [0, -1]
+                new_position = self.pos + shift
+            else:
+                new_position = [self.pos[0], self.height - 1]
+
+        elif action == "d":
+            if self.pos[1] < self.height - 1:
+                shift = [0, 1]
+                new_position = self.pos + shift
+            else:
+                new_position = [self.pos[0], 0]
+
+        elif action == "r":
+            if self.pos[0] < self.width - 1:
+                shift = [1, 0]
+                new_position = self.pos + shift
+            else:
+               new_position = [0, self.pos[1]]
+
+        elif action == "l":
+            if self.pos[0] > 0:
+                shift = [-1,0]
+                new_position = self.pos + shift
+            else:
+                new_position = [self.width - 1, self.pos[1]]
+
+        return new_position
+
+
+    def epsilon_step(self, epsilon, wait=False):
         actions = ["u", "d", "r", "l"]
         random_number = np.random.random()
 
@@ -66,12 +99,14 @@ class RL_environment():
             max_value_indices = np.where(current_state_values == np.max(current_state_values))[0]
             step = np.random.choice([actions[i] for i in max_value_indices])
 
-        self.action_to_step(step)
+        if not wait:
+            self.action_to_step(step) #immediately move
+
+        self.action_hist.append(step)
 
     def softmax_step(self, epsilon):
         T = epsilon/(1-epsilon)
         #Todo: implement softmax policy
-
 
     def last_action(self):
         state_diff = np.array(self.positions[-1]) - np.array(self.positions[-2])
@@ -84,16 +119,10 @@ class RL_environment():
         else:
             return "d"
 
-    def update_value(self, position):
+    def update_value(self, position, next_action=None):
         a = self.last_action()
-        if a == "u":
-            z = 0
-        elif a == "d":
-            z = 1
-        elif a == "r":
-            z = 2
-        elif a == "l":
-            z = 3
+        action_to_index = {"u": 0, "d": 1, "r": 2, "l": 3}
+        z = action_to_index[a]
         discount_rate = 0.7
         learning_rate = 0.1
         if self.mode == "Q-Learning":
@@ -101,10 +130,10 @@ class RL_environment():
             update_factor = self.reward_function[self.pos[0], self.pos[1]] + discount_rate * max_q - self.values[position[0], position[1], z]
             self.values[position[0], position[1], z] += learning_rate * update_factor
         elif self.mode == "SARSA":
-            blabla = 0 #Todo: How is the action of this value determined?
-            update_factor = self.reward_function[self.pos[0], self.pos[1]] + discount_rate * blabla - self.values[position[0], position[1], z]
+            next_state = self.compute_new_position(next_action)
+            q_val_next = self.values[next_state[0], next_state[1], action_to_index[next_action]]  #Todo: How is the action of this value determined?
+            update_factor = self.reward_function[self.pos[0], self.pos[1]] + discount_rate * q_val_next - self.values[position[0], position[1], z]
             self.values[position[0], position[1], z] += learning_rate * update_factor
-
 
 
 def create_environment(width, height, learning_mode = "Q-Learning"):
