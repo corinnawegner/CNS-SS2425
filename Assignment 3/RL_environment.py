@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 class RL_environment():
-    def __init__(self, width, height, goal_state, reward_function, pos_start=np.array([0, 0]), learning_rate = 0.1, discount_rate = 0.7,  learning_mode = "Q-Learning", alpha = 0.1, beta = 0.1, gamma = 0.7):
+    def __init__(self, width, height, goal_state, reward_function, pos_start=np.array([0, 0]), learning_rate = 0.1, discount_rate = 0.7,  learning_mode = "Q-Learning", beta = 0.1, gamma = 0.7):
         self.width = width
         self.height = height
         self.goal_state = goal_state
@@ -10,57 +10,18 @@ class RL_environment():
         self.pos_start = np.copy(pos_start)
         self.pos = np.copy(pos_start)
         self.positions = [tuple(pos_start)]  # Store as tuple for immutability
-        self.values = np.zeros((width, height, 5))
         self.action_hist = []
+        self.values = np.zeros((width, height, 5))
         self.mode = learning_mode
         self.discount_rate = discount_rate
         self.learning_rate = learning_rate
+        #For Actor-Critic:
         self.gamma = gamma
         self.beta = beta
-
-
-
-    def move_left(self):
-        if self.pos[0] > 0:
-            self.pos[0] -= 1
-        else:
-            self.pos[0] = self.width - 1
-        self.positions.append(tuple(self.pos))
-
-    def move_right(self):
-        if self.pos[0] < self.width - 1:
-            self.pos[0] += 1
-        else:
-            self.pos[0] = 0
-        self.positions.append(tuple(self.pos))
-
-    def move_up(self):
-        if self.pos[1] > 0:
-            self.pos[1] -= 1
-        else:
-            self.pos[1] = self.height - 1
-        self.positions.append(tuple(self.pos))
-
-    def move_down(self):
-        if self.pos[1] < self.height - 1:
-            self.pos[1] += 1
-        else:
-            self.pos[1] = 0
-        self.positions.append(tuple(self.pos))
 
     def back_to_start_position(self):
         self.pos = np.copy(self.pos_start)
         self.positions = [tuple(self.pos_start)]
-
-    def action_to_step(self, action): #Todo: Change this function and delete move functions
-        if action == "u":
-            self.move_up()
-        elif action == "d":
-            self.move_down()
-        elif action == "r":
-            self.move_right()
-        elif action == "l":
-            self.move_left()
 
     def compute_new_position(self, action):
         if action == "u":
@@ -93,6 +54,10 @@ class RL_environment():
 
         return new_position
 
+    def action_to_step(self, action):
+        pos_new = self.compute_new_position(action)
+        self.pos = pos_new
+        self.positions.append(tuple(self.pos))
 
     def epsilon_step(self, epsilon, wait=False):
         actions = ["u", "d", "r", "l"]
@@ -146,19 +111,8 @@ class RL_environment():
 
         self.action_hist.append(action)
 
-    def last_action(self):
-        state_diff = np.array(self.positions[-1]) - np.array(self.positions[-2])
-        if state_diff[0] == -1:
-            return "l"
-        elif state_diff[0] == 1:
-            return "r"
-        elif state_diff[1] == -1:
-            return "u"
-        else:
-            return "d"
-
     def update_value(self, position, next_action=None):
-        a = self.last_action()
+        a = self.action_hist[-1]
         action_to_index = {"u": 0, "d": 1, "r": 2, "l": 3}
         z = action_to_index[a]
         if self.mode == "Q-Learning":
@@ -171,7 +125,7 @@ class RL_environment():
             update_factor = self.reward_function[self.pos[0], self.pos[1]] + self.discount_rate * q_val_next - self.values[position[0], position[1], z]
             self.values[position[0], position[1], z] += self.learning_rate * update_factor
         elif self.mode == "Actor-Critic":
-            state_prev = self.positions[-2]
+            state_prev = position
             delta_error = self.reward_function[self.pos[0], self.pos[1]] + self.gamma * self.values[self.pos[0], self.pos[1], 4] - self.values[state_prev[0], state_prev[1], 4]
             self.values[position[0], position[1], z] += self.learning_rate * delta_error
             self.values[state_prev[0], state_prev[1], 4] += self.beta * delta_error

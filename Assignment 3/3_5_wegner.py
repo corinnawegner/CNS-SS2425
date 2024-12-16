@@ -4,11 +4,6 @@ from scipy.optimize import curve_fit
 from tqdm import tqdm
 from RL_environment import *
 
-def exponential_decay(n, A, B, lam):
-    return A*np.exp(-n/lam) + B
-
-
-
 list_size = [5, 10, 20, 40, 80]
 list_avg_paths = []
 list_fit_params = []
