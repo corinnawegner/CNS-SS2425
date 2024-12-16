@@ -105,6 +105,10 @@ class RL_environment():
         self.action_hist.append(step)
 
     def softmax_step(self, epsilon, wait = False):
+        if epsilon == 1:
+            self.epsilon_step(epsilon, wait=wait)
+            return 0
+
         actions = ["u", "d", "r", "l"]
         random_number = np.random.random()
 
@@ -112,7 +116,7 @@ class RL_environment():
             action = np.random.choice(actions)
 
         else:
-            T = epsilon/(1-epsilon)
+            T = temperature(epsilon)
 
             action_to_index = {"u": 0, "d": 1, "r": 2, "l": 3}
             weights = {}
@@ -198,6 +202,13 @@ def plot_results(env):
     plt.ylabel("Height")
     plt.legend()
     plt.show()
+
+def exponential_decay(n, A, B, lam):
+    return A*np.exp(-n/lam) + B
+
+def temperature(eps):
+    T = eps / (1 - eps)
+    return T
 
 def exponential_decay(n, A, B, lam):
     return A*np.exp(-n/lam) + B
