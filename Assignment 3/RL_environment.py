@@ -104,9 +104,37 @@ class RL_environment():
 
         self.action_hist.append(step)
 
-    def softmax_step(self, epsilon):
-        T = epsilon/(1-epsilon)
-        #Todo: implement softmax policy
+    def softmax_step(self, epsilon, wait = False):
+        actions = ["u", "d", "r", "l"]
+        random_number = np.random.random()
+
+        if random_number < epsilon:
+            action = np.random.choice(actions)
+
+        else:
+            T = epsilon/(1-epsilon)
+
+            action_to_index = {"u": 0, "d": 1, "r": 2, "l": 3}
+            weights = {}
+            normalization_constant = 0
+            for action in actions:
+                q = self.values[self.pos[0], self.pos[1], action_to_index[action]]
+                weight_factor = np.exp(q/T)
+                weights[action] = weight_factor
+                normalization_constant += weight_factor
+
+            # Normalize weights to probabilities
+            probabilities = {action: weight / normalization_constant for action, weight in weights.items()}
+
+            # Select an action randomly with the computed probabilities
+            actions_list = list(probabilities.keys())
+            probabilities_list = list(probabilities.values())
+            action = np.random.choice(actions_list, p=probabilities_list)
+
+        if not wait:
+            self.action_to_step(action)  # immediately move
+
+        self.action_hist.append(action)
 
     def last_action(self):
         state_diff = np.array(self.positions[-1]) - np.array(self.positions[-2])
