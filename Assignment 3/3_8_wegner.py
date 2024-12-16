@@ -27,7 +27,7 @@ for eps in tqdm(list_epsilon, desc="Processing epsilon values"):
         for epoch in n_epochs:
             RL_env.back_to_start_position()
             while tuple(RL_env.pos) != tuple(RL_env.goal_state):
-                RL_env.epsilon_step(eps)
+                RL_env.softmax_step(eps)
                 RL_env.update_value(RL_env.positions[-2]) #We update the state before the current step
             list_path_length_i.append(len(RL_env.positions))
         list_path_length.append(list_path_length_i)

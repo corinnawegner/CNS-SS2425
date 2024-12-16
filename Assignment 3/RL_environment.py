@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 class RL_environment():
-    def __init__(self, width, height, goal_state, reward_function, pos_start=np.array([0, 0]), learning_mode = "Q-Learning"):
+    def __init__(self, width, height, goal_state, reward_function, pos_start=np.array([0, 0]), learning_rate = 0.1, discount_rate = 0.7,  learning_mode = "Q-Learning", alpha = 0.1, beta = 0.1, gamma = 0.7):
         self.width = width
         self.height = height
         self.goal_state = goal_state
@@ -10,9 +10,15 @@ class RL_environment():
         self.pos_start = np.copy(pos_start)
         self.pos = np.copy(pos_start)
         self.positions = [tuple(pos_start)]  # Store as tuple for immutability
-        self.values = np.zeros((width, height, 4))
+        self.values = np.zeros((width, height, 5))
         self.action_hist = []
         self.mode = learning_mode
+        self.discount_rate = discount_rate
+        self.learning_rate = learning_rate
+        self.gamma = gamma
+        self.beta = beta
+
+
 
     def move_left(self):
         if self.pos[0] > 0:
@@ -46,7 +52,7 @@ class RL_environment():
         self.pos = np.copy(self.pos_start)
         self.positions = [tuple(self.pos_start)]
 
-    def action_to_step(self, action):
+    def action_to_step(self, action): #Todo: Change this function and delete move functions
         if action == "u":
             self.move_up()
         elif action == "d":
@@ -155,18 +161,20 @@ class RL_environment():
         a = self.last_action()
         action_to_index = {"u": 0, "d": 1, "r": 2, "l": 3}
         z = action_to_index[a]
-        discount_rate = 0.7
-        learning_rate = 0.1
         if self.mode == "Q-Learning":
-            max_q = np.max(self.values[self.pos[0], self.pos[1]])
-            update_factor = self.reward_function[self.pos[0], self.pos[1]] + discount_rate * max_q - self.values[position[0], position[1], z]
-            self.values[position[0], position[1], z] += learning_rate * update_factor
+            max_q = np.max(self.values[self.pos[0], self.pos[1]][:3])
+            update_factor = self.reward_function[self.pos[0], self.pos[1]] + self.discount_rate * max_q - self.values[position[0], position[1], z]
+            self.values[position[0], position[1], z] += self.learning_rate * update_factor
         elif self.mode == "SARSA":
             next_state = self.compute_new_position(next_action)
             q_val_next = self.values[next_state[0], next_state[1], action_to_index[next_action]]  #Todo: How is the action of this value determined?
-            update_factor = self.reward_function[self.pos[0], self.pos[1]] + discount_rate * q_val_next - self.values[position[0], position[1], z]
-            self.values[position[0], position[1], z] += learning_rate * update_factor
-
+            update_factor = self.reward_function[self.pos[0], self.pos[1]] + self.discount_rate * q_val_next - self.values[position[0], position[1], z]
+            self.values[position[0], position[1], z] += self.learning_rate * update_factor
+        elif self.mode == "Actor-Critic":
+            state_prev = self.positions[-2]
+            delta_error = self.reward_function[self.pos[0], self.pos[1]] + self.gamma * self.values[self.pos[0], self.pos[1], 4] - self.values[state_prev[0], state_prev[1], 4]
+            self.values[position[0], position[1], z] += self.learning_rate * delta_error
+            self.values[state_prev[0], state_prev[1], 4] += self.beta * delta_error
 
 def create_environment(width, height, learning_mode = "Q-Learning"):
     goal_state = int(width/2), int(height/2)
