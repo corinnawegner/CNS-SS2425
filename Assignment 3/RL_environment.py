@@ -5,11 +5,11 @@ class RL_environment():
     def __init__(self, width, height, goal_state, reward_function, pos_start=np.array([0, 0]), learning_rate = 0.1, discount_rate = 0.7,  learning_mode = "Q-Learning", beta = 0.1, gamma = 0.7):
         self.width = width
         self.height = height
-        self.goal_state = goal_state
+        self.goal_state = tuple(goal_state)
         self.reward_function = reward_function
-        self.pos_start = np.copy(pos_start)
+        self.pos_start = tuple(pos_start)
         self.pos = np.copy(pos_start)
-        self.positions = [tuple(pos_start)]  # Store as tuple for immutability
+        self.positions = [self.pos]  # Store as tuple for immutability
         self.action_hist = []
         self.values = np.zeros((width, height, 5))
         self.mode = learning_mode
@@ -20,44 +20,25 @@ class RL_environment():
         self.beta = beta
 
     def back_to_start_position(self):
-        self.pos = np.copy(self.pos_start)
-        self.positions = [tuple(self.pos_start)]
+        self.pos = self.pos_start
+        self.positions = [self.pos]
 
     def compute_new_position(self, action):
+        x, y = self.pos
         if action == "u":
-            if self.pos[1] > 0:
-                shift = [0, -1]
-                new_position = self.pos + shift
-            else:
-                new_position = [self.pos[0], self.height - 1]
-
+            y = (y - 1) % self.height  # Wrap around
         elif action == "d":
-            if self.pos[1] < self.height - 1:
-                shift = [0, 1]
-                new_position = self.pos + shift
-            else:
-                new_position = [self.pos[0], 0]
-
+            y = (y + 1) % self.height
         elif action == "r":
-            if self.pos[0] < self.width - 1:
-                shift = [1, 0]
-                new_position = self.pos + shift
-            else:
-               new_position = [0, self.pos[1]]
-
+            x = (x + 1) % self.width
         elif action == "l":
-            if self.pos[0] > 0:
-                shift = [-1,0]
-                new_position = self.pos + shift
-            else:
-                new_position = [self.width - 1, self.pos[1]]
-
-        return new_position
+            x = (x - 1) % self.width
+        return (x, y)
 
     def action_to_step(self, action):
         pos_new = self.compute_new_position(action)
         self.pos = pos_new
-        self.positions.append(tuple(self.pos))
+        self.positions.append(self.pos)
 
     def epsilon_step(self, epsilon, wait=False):
         actions = ["u", "d", "r", "l"]
@@ -66,14 +47,14 @@ class RL_environment():
         if random_number < epsilon:
             step = np.random.choice(actions)
         else:
-            current_state_values = self.values[self.pos[0], self.pos[1]]
+            current_state_values = self.values[self.pos[0], self.pos[1], :4]
             max_value_indices = np.where(current_state_values == np.max(current_state_values))[0]
             step = np.random.choice([actions[i] for i in max_value_indices])
 
         if not wait:
-            self.action_to_step(step) #immediately move
-
+            self.action_to_step(step)  # Immediately move
         self.action_hist.append(step)
+
 
     def softmax_step(self, epsilon, wait = False):
         if epsilon == 1:
@@ -116,7 +97,7 @@ class RL_environment():
         action_to_index = {"u": 0, "d": 1, "r": 2, "l": 3}
         z = action_to_index[a]
         if self.mode == "Q-Learning":
-            max_q = np.max(self.values[self.pos[0], self.pos[1]][:3])
+            max_q = np.max(self.values[self.pos[0], self.pos[1]][:3]) #Todo: Until index 3 or 4?
             update_factor = self.reward_function[self.pos[0], self.pos[1]] + self.discount_rate * max_q - self.values[position[0], position[1], z]
             self.values[position[0], position[1], z] += self.learning_rate * update_factor
         elif self.mode == "SARSA":
