@@ -38,6 +38,8 @@ plt.title("Average path lengths over 100 trials")
 plt.legend()
 plt.show()
 
+list_fit_params = np.array(list_fit_params)
+
 plt.plot(list_epsilon, list_fit_params[:,1])
 plt.title("Dependency of parameter B on epsilon")
 plt.xlabel("epsilon")
@@ -49,3 +51,5 @@ plt.title("Dependency of parameter Lambda on epsilon")
 plt.xlabel("epsilon")
 plt.ylabel("fit parameter")
 plt.show()
+
+print(list_fit_params)

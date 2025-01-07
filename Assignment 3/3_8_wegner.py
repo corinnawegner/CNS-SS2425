@@ -59,3 +59,4 @@ plt.xlabel("epsilon")
 plt.ylabel("fit parameter")
 plt.show()
 
+print(list_fit_params)
