@@ -97,13 +97,13 @@ class RL_environment():
         action_to_index = {"u": 0, "d": 1, "r": 2, "l": 3}
         z = action_to_index[a]
         if self.mode == "Q-Learning":
-            max_q = np.max(self.values[self.pos[0], self.pos[1]][:3]) #Todo: Until index 3 or 4?
+            max_q = np.max(self.values[self.pos[0], self.pos[1]][:4])
             update_factor = self.reward_function[self.pos[0], self.pos[1]] + self.discount_rate * max_q - self.values[position[0], position[1], z]
             self.values[position[0], position[1], z] += self.learning_rate * update_factor
         elif self.mode == "SARSA":
             next_state = self.compute_new_position(next_action)
             q_val_next = self.values[next_state[0], next_state[1], action_to_index[next_action]]  #Todo: How is the action of this value determined?
-            update_factor = self.reward_function[self.pos[0], self.pos[1]] + self.discount_rate * q_val_next - self.values[position[0], position[1], z]
+            update_factor = self.reward_function[next_state[0], next_state[1]] + self.discount_rate * q_val_next - self.values[position[0], position[1], z]
             self.values[position[0], position[1], z] += self.learning_rate * update_factor
         elif self.mode == "Actor-Critic":
             state_prev = position
@@ -152,6 +152,3 @@ def exponential_decay(n, A, B, lam):
 def temperature(eps):
     T = eps / (1 - eps)
     return T
-
-def exponential_decay(n, A, B, lam):
-    return A*np.exp(-n/lam) + B
