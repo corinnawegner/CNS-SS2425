@@ -19,9 +19,9 @@ for eps in tqdm(list_epsilon, desc="Processing epsilon values"):
             RL_env.back_to_start_position()
             RL_env.epsilon_step(eps)  # We need to do one step at the beginning to enable SARSA
             while tuple(RL_env.pos) != tuple(RL_env.goal_state):
-                RL_env.epsilon_step(eps, wait=True)
-                RL_env.update_value(RL_env.positions[-2], next_action=RL_env.action_hist[-1]) #We update the state before the current step
-                RL_env.action_to_step(RL_env.action_hist[-1])
+                RL_env.epsilon_step(eps)#, wait=True)
+                RL_env.update_value(RL_env.positions[-3]) #We update the state before the state that we have just left
+                #RL_env.action_to_step(RL_env.action_hist[-1])
             list_path_length_i.append(len(RL_env.positions))
         list_path_length.append(list_path_length_i)
 

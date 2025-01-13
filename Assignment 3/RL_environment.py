@@ -92,7 +92,7 @@ class RL_environment():
 
         self.action_hist.append(action)
 
-    def update_value(self, position, next_action=None):
+    def update_value(self, position):
         a = self.action_hist[-1]
         action_to_index = {"u": 0, "d": 1, "r": 2, "l": 3}
         z = action_to_index[a]
@@ -101,15 +101,17 @@ class RL_environment():
             update_factor = self.reward_function[self.pos[0], self.pos[1]] + self.discount_rate * max_q - self.values[position[0], position[1], z]
             self.values[position[0], position[1], z] += self.learning_rate * update_factor
         elif self.mode == "SARSA":
-            next_state = self.compute_new_position(next_action)
-            q_val_next = self.values[next_state[0], next_state[1], action_to_index[next_action]]  #Todo: How is the action of this value determined?
-            update_factor = self.reward_function[next_state[0], next_state[1]] + self.discount_rate * q_val_next - self.values[position[0], position[1], z]
+            s_t = self.positions[-2] # When we update the value we already are in state s_(t+1) for sarsa
+            q_val_next = self.values[s_t[0], s_t[1], z]
+            update_factor = self.reward_function[s_t[0], s_t[1]] + self.discount_rate * q_val_next - self.values[position[0], position[1], z]
             self.values[position[0], position[1], z] += self.learning_rate * update_factor
         elif self.mode == "Actor-Critic":
             state_prev = position
             delta_error = self.reward_function[self.pos[0], self.pos[1]] + self.gamma * self.values[self.pos[0], self.pos[1], 4] - self.values[state_prev[0], state_prev[1], 4]
             self.values[position[0], position[1], z] += self.learning_rate * delta_error
             self.values[state_prev[0], state_prev[1], 4] += self.beta * delta_error
+        else:
+            raise ValueError("Invalid learning mode. Choose between Q-Learning, SARSA and Actor-Critic, where default is Q-Learning.")
 
 def create_environment(width, height, learning_mode = "Q-Learning"):
     goal_state = int(width/2), int(height/2)
