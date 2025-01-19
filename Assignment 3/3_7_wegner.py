@@ -17,16 +17,17 @@ for eps in tqdm(list_epsilon, desc="Processing epsilon values"):
         list_path_length_i = []
         for epoch in n_epochs:
             RL_env.back_to_start_position()
-            RL_env.epsilon_step(eps)  # We need to do one step at the beginning to enable SARSA
+            next_action = RL_env.determine_epsilon_action(eps)
             while tuple(RL_env.pos) != tuple(RL_env.goal_state):
-                RL_env.epsilon_step(eps)#, wait=True)
-                RL_env.update_value(RL_env.positions[-3]) #We update the state before the state that we have just left
-                #RL_env.action_to_step(RL_env.action_hist[-1])
+                RL_env.do_action(next_action) # doing a_t-1
+                next_action = RL_env.determine_epsilon_action(eps) # determine a_t
+                RL_env.update_value(RL_env.positions[-2], next_action = next_action) # Update (s_t-1, a_t-1)
+            RL_env.update_value(RL_env.positions[-1], next_action = next_action)
             list_path_length_i.append(len(RL_env.positions))
         list_path_length.append(list_path_length_i)
 
     mean_path_length = np.mean(list_path_length, axis=0)
-    popt, _ = curve_fit(exponential_decay, n_epochs, mean_path_length, p0=(1, 100, 1))
+    popt, pcov = curve_fit(exponential_decay, n_epochs, mean_path_length, p0=(1, 100, 1))
 
     list_avg_paths.append(mean_path_length)
     list_fit_params.append(popt)
