@@ -40,7 +40,11 @@ class RL_environment():
         self.pos = pos_new
         self.positions.append(self.pos)
 
-    def epsilon_step(self, epsilon, wait=False):
+    def do_action(self, action):
+        self.action_to_step(action)
+        self.action_hist.append(action)
+
+    def determine_epsilon_action(self, epsilon):
         actions = ["u", "d", "r", "l"]
         random_number = np.random.random()
 
@@ -50,10 +54,11 @@ class RL_environment():
             current_state_values = self.values[self.pos[0], self.pos[1], :4]
             max_value_indices = np.where(current_state_values == np.max(current_state_values))[0]
             step = np.random.choice([actions[i] for i in max_value_indices])
+        return step
 
-        if not wait:
-            self.action_to_step(step)  # Immediately move
-        self.action_hist.append(step)
+    def epsilon_step(self, epsilon):
+        step = self.determine_epsilon_action(epsilon)
+        self.do_action(step)
 
     def action_to_index(self, action):
         action_to_index_dict = {"u": 0, "d": 1, "r": 2, "l": 3}
@@ -102,7 +107,7 @@ class RL_environment():
 
         self.action_hist.append(action)
 
-    def update_value(self, position):
+    def update_value(self, position, next_action = None):
         a = self.action_hist[-1]
         z = self.action_to_index(a)
         if self.mode == "Q-Learning":
@@ -110,9 +115,8 @@ class RL_environment():
             update_factor = self.reward_function[self.pos[0], self.pos[1]] + self.discount_rate * max_q - self.values[position[0], position[1], z]
             self.values[position[0], position[1], z] += self.learning_rate * update_factor
         elif self.mode == "SARSA":
-            s_t = self.positions[-2] # When we update the value we already are in state s_(t+1) for sarsa
-            q_val_next = self.values[s_t[0], s_t[1], z]
-            update_factor = self.reward_function[s_t[0], s_t[1]] + self.discount_rate * q_val_next - self.values[position[0], position[1], z]
+            q_val_next = self.values[self.pos[0], self.pos[1], self.action_to_index(next_action)]
+            update_factor = self.reward_function[self.pos[0], self.pos[1]] + self.discount_rate * q_val_next - self.values[position[0], position[1], z]
             self.values[position[0], position[1], z] += self.learning_rate * update_factor
         elif self.mode == "Actor-Critic":
             state_prev = position
