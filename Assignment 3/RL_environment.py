@@ -55,9 +55,12 @@ class RL_environment():
             self.action_to_step(step)  # Immediately move
         self.action_hist.append(step)
 
+    def action_to_index(self, action):
+        action_to_index_dict = {"u": 0, "d": 1, "r": 2, "l": 3}
+        return action_to_index_dict[action]
 
     def softmax_step(self, epsilon, wait = False):
-        if epsilon == 1:
+        if epsilon == 1 or epsilon == 0:
             self.epsilon_step(epsilon, wait=wait)
             return 0
 
@@ -68,19 +71,26 @@ class RL_environment():
             action = np.random.choice(actions)
 
         else:
-            T = temperature(epsilon)
+            t = temperature(epsilon)
 
-            action_to_index = {"u": 0, "d": 1, "r": 2, "l": 3}
+            #action_to_index = {"u": 0, "d": 1, "r": 2, "l": 3}
             weights = {}
             normalization_constant = 0
             for action in actions:
-                q = self.values[self.pos[0], self.pos[1], action_to_index[action]]
-                weight_factor = np.exp(q/T)
-                weights[action] = weight_factor
-                normalization_constant += weight_factor
+                q = self.values[self.pos[0], self.pos[1], self.action_to_index(action)]
+                #print(f'q, t: ', q, t, q/t)
+                weight_factor = np.exp(q/t)
+                if weight_factor < 1e-5:
+                    weights[action] = 0
+                if not np.isnan(weight_factor) and not np.isinf(weight_factor):
+                    weights[action] = weight_factor
+                else:
+                    weights[action] = 1
 
             # Normalize weights to probabilities
-            probabilities = {action: weight / normalization_constant for action, weight in weights.items()}
+            probabilities = {action: weight / np.sum(list(weights.values())) for action, weight in weights.items()}
+            #print(weights, probabilities)
+            #action = actions[np.argmax(probabilities)]
 
             # Select an action randomly with the computed probabilities
             actions_list = list(probabilities.keys())
@@ -94,8 +104,7 @@ class RL_environment():
 
     def update_value(self, position):
         a = self.action_hist[-1]
-        action_to_index = {"u": 0, "d": 1, "r": 2, "l": 3}
-        z = action_to_index[a]
+        z = self.action_to_index(a)
         if self.mode == "Q-Learning":
             max_q = np.max(self.values[self.pos[0], self.pos[1]][:4])
             update_factor = self.reward_function[self.pos[0], self.pos[1]] + self.discount_rate * max_q - self.values[position[0], position[1], z]
@@ -117,11 +126,10 @@ def create_environment(width, height, learning_mode = "Q-Learning"):
     goal_state = int(width/2), int(height/2)
     rf = np.zeros((width, height))
     rf[goal_state[0], goal_state[1]] = 100
-    env = RL_environment(width, height, goal_state, rf, learning_mode=learning_mode)
+    env = RL_environment(width, height, goal_state, rf, learning_mode = learning_mode)
     return env
 
-
-def plot_results(env):
+def plot_results(env, title = None):
     # Extract Q_max(s) values
     Q_max = np.max(env.values, axis=2)
 
