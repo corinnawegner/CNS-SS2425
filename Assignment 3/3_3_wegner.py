@@ -7,5 +7,6 @@ for epoch in range(1000):
     while tuple(RL_env.pos) != tuple(RL_env.goal_state):
         RL_env.epsilon_step(0.2)
         RL_env.update_value(RL_env.positions[-2]) #We update the state before the current step
+    RL_env.update_value(RL_env.positions[-1]) #Update the value of the goal state
 
 plot_results(RL_env)

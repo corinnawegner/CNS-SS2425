@@ -19,12 +19,13 @@ for eps in tqdm(list_epsilon, desc="Processing epsilon values"):
             RL_env.back_to_start_position()
             while tuple(RL_env.pos) != tuple(RL_env.goal_state):
                 RL_env.epsilon_step(eps)
-                RL_env.update_value(RL_env.positions[-2]) #We update the state before the current step
+                RL_env.update_value(RL_env.positions[-2]) # We update the state before the current step
+            RL_env.update_value(RL_env.positions[-1])  # Update the value of the goal state
             list_path_length_i.append(len(RL_env.positions))
         list_path_length.append(list_path_length_i)
 
     mean_path_length = np.mean(list_path_length, axis=0)
-    popt, _ = curve_fit(exponential_decay, n_epochs, mean_path_length, p0=(1, 100, 1))
+    popt, pcov = curve_fit(exponential_decay, n_epochs, mean_path_length, p0=(1, 100, 1))
 
     list_avg_paths.append(mean_path_length)
     list_fit_params.append(popt)
