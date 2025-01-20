@@ -24,6 +24,11 @@ for eps in tqdm(list_epsilon, desc="Processing epsilon values"):
             list_path_length_i.append(len(RL_env.positions))
         list_path_length.append(list_path_length_i)
 
+    """
+    def exponential_decay(n, A, B, lam):
+    return A*np.exp(-n/lam) + B
+    """
+
     mean_path_length = np.mean(list_path_length, axis=0)
     popt, pcov = curve_fit(exponential_decay, n_epochs, mean_path_length, p0=(1, 100, 1))
 
