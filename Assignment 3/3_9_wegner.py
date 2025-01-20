@@ -20,6 +20,7 @@ for eps in tqdm(list_epsilon, desc="Processing epsilon values"):
             while tuple(RL_env.pos) != tuple(RL_env.goal_state):
                 RL_env.softmax_step(eps)
                 RL_env.update_value(RL_env.positions[-2])  # We update the state before the current step
+            RL_env.update_value(RL_env.positions[-1])
             list_path_length_i.append(len(RL_env.positions))
         list_path_length.append(list_path_length_i)
 
@@ -37,6 +38,8 @@ plt.ylabel("Path length")
 plt.title("Average path lengths over 100 trials")
 plt.legend()
 plt.show()
+
+list_fit_params = np.array(list_fit_params)
 
 plt.plot(list_epsilon, list_fit_params[:,1])
 plt.title("Dependency of parameter B on epsilon")
