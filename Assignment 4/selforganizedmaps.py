@@ -3,7 +3,6 @@ from PIL import Image
 import random
 import math
 
-
 # Step 1: Load an RGB image into a suitable data structure
 def load_image(filename):
     """
