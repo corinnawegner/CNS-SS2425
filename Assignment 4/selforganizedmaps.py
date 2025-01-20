@@ -1,6 +1,8 @@
 import numpy as np
 from PIL import Image
 import random
+import math
+
 
 # Step 1: Load an RGB image into a suitable data structure
 def load_image(filename):
@@ -157,26 +159,30 @@ def reconstruct_compressed_image(reconstructed_filename, output_image_filename, 
     print(f"Reconstructed image saved as {output_image_filename}")
 
 
-
-def determine_neighborhood_neurons(som_grid, winner_pos, radius=5):
+def determine_neighborhood_neurons(som_grid, winner_pos, radius=5.0):
     """
-    Determine the neurons within the neighborhood of the winning neuron
-    using periodic boundary conditions (torus shape).
+    Determine the neurons within the circular neighborhood of the winning neuron
+    using periodic boundary conditions (torus shape). Supports float radius.
     :param som_grid: SOM grid of shape (m, n, 3)
     :param winner_pos: Tuple (x*, y*) of the winning neuron's position
-    :param radius: Radius of the neighborhood (default: 5)
+    :param radius: Radius of the neighborhood (can be a float)
     :return: List of (x, y) positions of neurons in the neighborhood
     """
     m, n, _ = som_grid.shape
     x_star, y_star = winner_pos
 
-    # Generate all positions in the rectangular neighborhood
+    # Generate all positions in the rectangular bounding box
     neighbors = []
-    for dx in range(-radius, radius + 1):
-        for dy in range(-radius, radius + 1):
+    int_radius = math.ceil(radius)  # Integer radius to define the bounding box
+    for dx in range(-int_radius, int_radius + 1):
+        for dy in range(-int_radius, int_radius + 1):
             x = (x_star + dx) % m  # Apply periodic boundary conditions for x
             y = (y_star + dy) % n  # Apply periodic boundary conditions for y
-            neighbors.append((x, y))
+
+            # Check if the neuron is within the circular radius
+            distance_squared = (dx ** 2 + dy ** 2)
+            if distance_squared <= radius ** 2:
+                neighbors.append((x, y))
 
     return neighbors
 

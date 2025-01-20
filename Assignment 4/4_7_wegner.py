@@ -2,11 +2,11 @@ from selforganizedmaps import *
 from tqdm import tqdm
 
 def main():
-    input_image = load_image(r"gradient.png")
+    input_image = load_image(r"testfile.png")
 
     for radius in [1,1.3,2,3,4]:
         # Initialize SOM grid and parameters
-        grid_rows, grid_cols = 3, 4
+        grid_rows, grid_cols = 32, 32
         som_grid = initialize_grid(grid_rows, grid_cols)
 
         # Flatten and shuffle the input image into RGB vectors
@@ -22,7 +22,7 @@ def main():
         with open(codebook_filename, "w") as f:
             pass
 
-        for step in tqdm(range(2)):
+        for step in tqdm(range(100)):
             for input_vector in input_vectors:
 
                 winner_pos = find_winning_neuron(som_grid, input_vector)
