@@ -12,7 +12,8 @@ def load_image(filename):
     """
     img = Image.open(filename)
     img = img.convert("RGB")  # Ensure the image is in RGB mode
-    return np.array(img)
+    print(f"shape: {np.array(img).shape}")
+    return np.array(img).astype(float)
 
 
 # Step 2: Initialize a grid of neurons
@@ -38,9 +39,88 @@ def generate_input_vectors(image_array):
     :return: list of RGB tuples shuffled randomly
     """
     h, w, _ = image_array.shape
-    input_vectors = image_array.reshape(h * w, 3)  # Flatten to a list of RGB values
-    random.shuffle(input_vectors.tolist())         # Shuffle the list
-    return input_vectors
+    orig_img = image_array.copy()
+    input_vectors = image_array.reshape(-1, 3)  # Flatten to a list of RGB values
+    np.random.shuffle(input_vectors)         # Shuffle the list
+    return input_vectors, orig_img
+
+
+# Load and preprocess images
+def preprocess_image(filename):
+    """
+    Load an image, convert to RGB, and set Blue channel to zero.
+    :param filename: Path to the image
+    :return: Preprocessed numpy array
+    """
+    img = Image.open(filename).convert("RGB")
+    img_array = np.array(img)
+    img_array[:, :, 2] = 0  # Set Blue channel to zero
+    return img_array
+
+# Train SOM
+def train_som(image_array, m, n, iterations):
+    """
+    Train a Self-Organizing Map (SOM) on the image data.
+    :param image_array: Preprocessed image array
+    :param m: Number of rows in SOM grid
+    :param n: Number of columns in SOM grid
+    :param iterations: Number of training iterations
+    :return: Trained SOM grid
+    """
+    h, w, _ = image_array.shape
+    input_vectors = image_array.reshape(h * w, 3).astype(np.float32)
+
+    # Initialize SOM grid
+    som_grid = np.random.uniform(0, 255, (m, n, 3)).astype(np.float32)
+    som_grid[:, :, 2] = 0  # Ensure Blue channel is zero
+
+    for t in range(iterations):
+        learning_rate_t = learning_rate(t)
+        input_vector = input_vectors[random.randint(0, len(input_vectors) - 1)]
+        winner_pos = find_winning_neuron(som_grid, input_vector)
+        update_weights(som_grid, winner_pos, input_vector, learning_rate_t)
+
+    return som_grid
+
+# Generate Voronoi tessellation
+def generate_voronoi(image_array, som_grid, output_filename):
+    """
+    Generate a Voronoi tessellation for the given image.
+    :param image_array: Input image array
+    :param som_grid: Trained SOM grid
+    :param output_filename: Path to save the Voronoi diagram
+    """
+    voronoi_image = np.zeros((255, 255, 3), dtype=np.uint8)
+
+    for r in range(255):
+        for g in range(255):
+            input_vector = np.array([r, g, 0], dtype=np.float32)
+            winner_pos = find_winning_neuron(som_grid, input_vector)
+            winner_x, winner_y = winner_pos
+            voronoi_image[r, g] = som_grid[winner_x, winner_y].astype(np.uint8)
+
+    img = Image.fromarray(voronoi_image)
+    img.save(output_filename)
+
+# Visualize and overlay weight vectors
+def plot_voronoi_with_weights(voronoi_filename, som_grid, output_filename):
+    voronoi_image = np.array(Image.open(voronoi_filename))
+
+    plt.figure(figsize=(10, 10))
+    plt.imshow(voronoi_image)
+    plt.title("Voronoi Tessellation in Red-Green Plane")
+    plt.xlabel("Red Channel")
+    plt.ylabel("Green Channel")
+
+    # Overlay weight vectors
+    m, n, _ = som_grid.shape
+    for i in range(m):
+        for j in range(n):
+            red, green, _ = som_grid[i, j]
+            plt.scatter(green, red, color="black", s=50, marker="o", edgecolors="white", linewidths=0.5)
+
+    plt.savefig(output_filename)
+    plt.show()
 
 def find_winning_neuron(som_grid, input_vector):
     """
@@ -53,7 +133,10 @@ def find_winning_neuron(som_grid, input_vector):
     distances = np.linalg.norm(som_grid - input_vector, axis=2)  # Compute distances
     min_distance = np.min(distances)  # Find the minimum distance
     winners = np.argwhere(distances == min_distance)  # Get all positions with the min distance
-    return tuple(winners[random.randint(0, len(winners) - 1)])  # Randomly pick one if multiple
+    #print(winners)
+    winning_neuron = tuple(winners[random.randint(0, len(winners) - 1)])
+    #print('winning neuron:', winning_neuron)
+    return winning_neuron   # Randomly pick one if multiple
 
 def learning_rate(t):
     tau = 400
@@ -69,6 +152,7 @@ def update_weights(som_grid, winner_pos, input_vector, learning_rate):
     """
     x, y = winner_pos
     som_grid[x, y] += learning_rate * (input_vector - som_grid[x, y])  # Update weights
+    return som_grid
 
 def save_codebook(som_grid, timestep, output_filename):
     """
@@ -149,6 +233,7 @@ def reconstruct_compressed_image(reconstructed_filename, output_image_filename, 
             #print(f"Skipping malformed line: {line.strip()}")
             continue
 
+        print(parts)
         x, y, red, green, blue = map(float, parts)
         reconstructed_image[int(x), int(y)] = [int(red), int(green), int(blue)]
 
@@ -202,7 +287,7 @@ def update_weights_kohonen(som_grid, neighbors, winner_pos, input_vector, learni
         x, y = neighbor
 
         # Calculate the Gaussian neighborhood function
-        distance_squared = (x - x_star) ** 2 + (y - y_star) ** 2
+        distance_squared = (x - x_star) ** 2 + (y - y_star) ** 2 #Todo
         h_ci = np.exp(-distance_squared / (2 * sigma_t ** 2))
 
         # Update the weight of the neuron

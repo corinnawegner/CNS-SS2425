@@ -82,7 +82,7 @@ def plot_voronoi_with_weights(voronoi_filename, som_grid, output_filename):
     for i in range(m):
         for j in range(n):
             red, green, _ = som_grid[i, j]
-            plt.scatter(red, green, color="black", s=50, marker="o", edgecolors="white", linewidths=0.5)
+            plt.scatter(green, red, color="black", s=50, marker="o", edgecolors="white", linewidths=0.5)
 
     plt.savefig(output_filename)
     plt.show()
@@ -90,7 +90,7 @@ def plot_voronoi_with_weights(voronoi_filename, som_grid, output_filename):
 # Main process
 if __name__ == "__main__":
     # Parameters
-    som_size = (4, 4)  # Grid size
+    som_size = (3, 4)  # Grid size
     iterations = 1000  # Number of iterations
 
     # Process gradient.png
