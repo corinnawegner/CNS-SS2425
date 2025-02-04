@@ -2,7 +2,7 @@ from scipy.optimize import curve_fit
 from RL_environment import *
 from tqdm import tqdm
 
-RL_env = create_environment(21, 21, learning_mode = "Actor-Critic")
+
 
 list_epsilon = [0, 0.2, 0.4, 0.6, 0.8]
 list_avg_paths = []
@@ -11,7 +11,7 @@ list_fit_params = []
 n_epochs = np.arange(1000)
 
 for eps in tqdm(list_epsilon, desc="Processing epsilon values"):
-    RL_env = create_environment(21, 21)
+    RL_env = create_environment(21, 21, learning_mode="Actor-Critic")
     list_path_length = []
     for i in range(100):
         list_path_length_i = []
