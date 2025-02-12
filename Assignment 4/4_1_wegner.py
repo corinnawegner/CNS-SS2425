@@ -2,7 +2,7 @@ from selforganizedmaps import *
 from tqdm import tqdm
 
 def main():
-    input_image = load_image(r".png")
+    input_image = load_image(r"gradient_nonlinear.png", set_blue_to_zero=True)
 
     # Initialize SOM grid and parameters
     grid_rows, grid_cols = 3, 4
@@ -42,6 +42,15 @@ def main():
     original_height = orig_img.shape[0]
 
     reconstruct_compressed_image(reconstructed_filename, output_image_filename, original_width, original_height)
+
+    rgb_grid_filename = "Codebook vectors of self-chosen image"
+    visualize_rgb_grid(som_grid, filename=rgb_grid_filename)
+    print(f"Codebook vectors saved as filename: {rgb_grid_filename}")
+
+    iterations = 1000
+    som_gradient = train_som(input_image, grid_rows, grid_cols, iterations)
+    generate_voronoi(input_image, som_gradient, "voronoi_gradient.png")
+    plot_voronoi_with_weights("voronoi_gradient.png", som_gradient, "voronoi_gradient_with_weights.png")
 
 
 if __name__ == "__main__":
