@@ -35,6 +35,11 @@ for delay in [-0.04, 0.04]:
     plt.ylabel("Weight")
     plt.show()
 
+    plt.plot(list_t[4001:], list_weight[4001:])
+    plt.title(f"Weight change for Synapse 1 with delay {delay} using ISO rule, zoomed in")
+    plt.xlabel("Time")
+    plt.ylabel("Weight")
+    plt.show()
 
 #Varying learning rate:
 list_mu = [0.05, 0.1, 0.2, 0.5]
@@ -60,6 +65,8 @@ for lr in list_mu:
                                                 [neuron_1.convolved_spike_train, neuron_2.convolved_spike_train])
         synapse_1.update_weight(learning_rule='ico', delta_t=dt, t=t)
 
+    list_developments.append(list_weight)
+
 for idx, lr in enumerate(list_mu):
     plt.plot(list_t[4001:], list_developments[idx][4001:], label = lr)
 plt.title(f"Weight change for Synapse 1 using Iso rule for different learning rates")
@@ -75,7 +82,7 @@ list_developments = []
 for dt in list_dt:
     # Define the system
     neuron_1 = Neuron(5, total_spiking_time = tmax)
-    neuron_2 = Neuron(5, total_spiking_time = tmax, delay = delay, stop_after=4)
+    neuron_2 = Neuron(5, total_spiking_time = tmax, delay = 0.04, stop_after=4)
     post_neuron = Neuron(0)
     synapse_1 = Synapse(neuron_1, post_neuron, learning_rate)
     synapse_2 = Synapse(neuron_2, post_neuron, learning_rate, weight=1)
