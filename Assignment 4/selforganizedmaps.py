@@ -2,9 +2,10 @@ import numpy as np
 from PIL import Image
 import random
 import math
+import matplotlib.pyplot as plt
 
 # Step 1: Load an RGB image into a suitable data structure
-def load_image(filename):
+def load_image(filename, set_blue_to_zero = False):
     """
     Load an image and convert it to an RGB array.
     :param filename: Path to the image file
@@ -12,50 +13,10 @@ def load_image(filename):
     """
     img = Image.open(filename)
     img = img.convert("RGB")  # Ensure the image is in RGB mode
-    print(f"shape: {np.array(img).shape}")
-    return np.array(img).astype(float)
-
-
-# Step 2: Initialize a grid of neurons
-def initialize_grid(m, n, init_blue_to_zero = False):
-    """
-    Initialize an m x n grid of neurons, each with random RGB weights.
-    :param init_blue_to_zero: Sets all values for blue to zero.
-    :param m: Number of rows
-    :param n: Number of columns
-    :return: numpy array of shape (m, n, 3) with random values in [0, 255]
-    """
-    grid = np.random.randint(0, 256, (m, n, 3), dtype=np.uint8)  # Generate integers
-    if init_blue_to_zero:
-        grid[:,:,2] = 0
-    return grid.astype(np.float32)  # Convert to float32
-
-
-# Step 3: Shuffle the input RGB array
-def generate_input_vectors(image_array):
-    """
-    Generate shuffled input vectors from the image.
-    :param image_array: numpy array of shape (height, width, 3)
-    :return: list of RGB tuples shuffled randomly
-    """
-    h, w, _ = image_array.shape
-    orig_img = image_array.copy()
-    input_vectors = image_array.reshape(-1, 3)  # Flatten to a list of RGB values
-    np.random.shuffle(input_vectors)         # Shuffle the list
-    return input_vectors, orig_img
-
-
-# Load and preprocess images
-def preprocess_image(filename):
-    """
-    Load an image, convert to RGB, and set Blue channel to zero.
-    :param filename: Path to the image
-    :return: Preprocessed numpy array
-    """
-    img = Image.open(filename).convert("RGB")
-    img_array = np.array(img)
-    img_array[:, :, 2] = 0  # Set Blue channel to zero
-    return img_array
+    img = np.array(img)
+    if set_blue_to_zero:
+        img[:, :, 2] = 0  # Set Blue channel to zero
+    return np.array(img)
 
 # Train SOM
 def train_som(image_array, m, n, iterations):
@@ -103,11 +64,20 @@ def generate_voronoi(image_array, som_grid, output_filename):
     img.save(output_filename)
 
 # Visualize and overlay weight vectors
-def plot_voronoi_with_weights(voronoi_filename, som_grid, output_filename):
-    voronoi_image = np.array(Image.open(voronoi_filename))
+def plot_voronoi_with_weights(voronoi_filename, som_grid, output_filename, rotation_angle = 0, flip_horizontal = False, flip_vertical = False):
+    voronoi_image = Image.open(voronoi_filename)
+
+    # Apply mirroring transformations
+    if flip_horizontal:
+        voronoi_image = voronoi_image.transpose(Image.FLIP_LEFT_RIGHT)  # Flip horizontally
+    if flip_vertical:
+        voronoi_image = voronoi_image.transpose(Image.FLIP_TOP_BOTTOM)  # Flip vertically
+
+    rotated_image = voronoi_image.rotate(rotation_angle)  # Rotate the image
 
     plt.figure(figsize=(10, 10))
-    plt.imshow(voronoi_image)
+    plt.imshow(rotated_image)
+
     plt.title("Voronoi Tessellation in Red-Green Plane")
     plt.xlabel("Red Channel")
     plt.ylabel("Green Channel")
@@ -117,10 +87,71 @@ def plot_voronoi_with_weights(voronoi_filename, som_grid, output_filename):
     for i in range(m):
         for j in range(n):
             red, green, _ = som_grid[i, j]
-            plt.scatter(green, red, color="black", s=50, marker="o", edgecolors="white", linewidths=0.5)
+            plt.scatter(red, green, color="black", s=50, marker="o", edgecolors="white", linewidths=0.5)
 
     plt.savefig(output_filename)
     plt.show()
+
+
+# Step 2: Initialize a grid of neurons
+def initialize_grid(m, n, mode = "random",init_blue_to_zero = False):
+    """
+    Initialize an m x n grid of neurons, each with random RGB weights.
+    :param init_blue_to_zero: Sets all values for blue to zero.
+    :param m: Number of rows
+    :param n: Number of columns
+    :return: numpy array of shape (m, n, 3) with random values in [0, 255]
+    """
+    grid = np.random.randint(0, 256, (m, n, 3), dtype=np.uint8)  # Generate integers
+    if init_blue_to_zero:
+        grid[:,:,2] = 0
+    if mode == "ordered":
+        # Flatten the grid to a list of RGB vectors
+        flat_grid = grid.reshape(-1, 3)
+
+        # Sort by perceived brightness (or another metric like sum of RGB)
+        flat_grid = flat_grid[np.argsort(0.299 * flat_grid[:, 0] + 0.587 * flat_grid[:, 1] + 0.114 * flat_grid[:, 2])]
+
+        # Reshape back to (m, n, 3)
+        grid = flat_grid.reshape(m, n, 3)
+    return grid.astype(np.float32)  # Convert to float32
+
+def visualize_rgb_grid(grid, filename="rgb_grid.png"):
+    """
+    Visualizes a 2D RGB grid using matplotlib and saves the plot.
+
+    Parameters:
+        grid (numpy.ndarray): A 3D numpy array of shape (m, n, 3) representing RGB values.
+        filename (str): The filename to save the plot.
+    """
+    plt.imshow(grid.astype(np.uint8))
+    plt.axis("off")  # Hide axes for better visualization
+    plt.savefig(filename, bbox_inches='tight', pad_inches=0)
+    plt.close()
+
+# Step 3: Shuffle the input RGB array
+def generate_input_vectors(image_array):
+    """
+    Generate shuffled input vectors from the image.
+    :param image_array: numpy array of shape (height, width, 3)
+    :return: list of RGB tuples shuffled randomly
+    """
+    h, w, _ = image_array.shape
+    orig_img = image_array.copy()
+    input_vectors = image_array.reshape(-1, 3)  # Flatten to a list of RGB values
+    np.random.shuffle(input_vectors)
+    return input_vectors, orig_img
+
+def preprocess_image(filename):
+    """
+    Load an image, convert to RGB, and set Blue channel to zero.
+    :param filename: Path to the image
+    :return: Preprocessed numpy array
+    """
+    img = Image.open(filename).convert("RGB")
+    img_array = np.array(img)
+    img_array[:, :, 2] = 0  # Set Blue channel to zero
+    return img_array
 
 def find_winning_neuron(som_grid, input_vector):
     """
@@ -133,9 +164,7 @@ def find_winning_neuron(som_grid, input_vector):
     distances = np.linalg.norm(som_grid - input_vector, axis=2)  # Compute distances
     min_distance = np.min(distances)  # Find the minimum distance
     winners = np.argwhere(distances == min_distance)  # Get all positions with the min distance
-    #print(winners)
     winning_neuron = tuple(winners[random.randint(0, len(winners) - 1)])
-    #print('winning neuron:', winning_neuron)
     return winning_neuron   # Randomly pick one if multiple
 
 def learning_rate(t):
@@ -233,7 +262,6 @@ def reconstruct_compressed_image(reconstructed_filename, output_image_filename, 
             #print(f"Skipping malformed line: {line.strip()}")
             continue
 
-        print(parts)
         x, y, red, green, blue = map(float, parts)
         reconstructed_image[int(x), int(y)] = [int(red), int(green), int(blue)]
 
@@ -281,14 +309,17 @@ def update_weights_kohonen(som_grid, neighbors, winner_pos, input_vector, learni
     :param learning_rate: Current learning rate α(t)
     """
     x_star, y_star = winner_pos
+    m, n, _ = som_grid.shape
 
     # Update weights for each neuron in the neighborhood
     for neighbor in neighbors:
         x, y = neighbor
 
-        # Calculate the Gaussian neighborhood function
-        distance_squared = (x - x_star) ** 2 + (y - y_star) ** 2 #Todo
+        dx = min(abs(x - x_star), m - abs(x - x_star))
+        dy = min(abs(y - y_star), n - abs(y - y_star))
+        distance_squared = dx ** 2 + dy ** 2
         h_ci = np.exp(-distance_squared / (2 * sigma_t ** 2))
 
         # Update the weight of the neuron
         som_grid[x, y] += learning_rate * h_ci * (input_vector - som_grid[x, y])
+    return som_grid

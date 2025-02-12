@@ -1,38 +1,24 @@
 from selforganizedmaps import *
 from tqdm import tqdm
 
-"""
-def generate_input_vectors(image_array, copies=3):
-    
-    Generate shuffled input vectors from multiple copies of the image.
-    :param image_array: numpy array of shape (height, width, 3)
-    :param copies: Number of shuffled copies to use
-    :return: List of RGB tuples shuffled randomly
-
-    h, w, _ = image_array.shape
-    input_vectors = np.tile(image_array.reshape(h * w, 3), (copies, 1))  # Create copies
-    np.random.shuffle(input_vectors)  # Shuffle all copies together
-    return input_vectors
-"""
-
 def main():
     input_image = load_image(r"testfile.png")
+    mode = "random"
 
-    for radius in [2]:
+    for radius in [1,1.3,2,3,4]:
         # Initialize SOM grid and parameters
         grid_rows, grid_cols = 32, 32
-        som_grid = initialize_grid(grid_rows, grid_cols)
+        som_grid = initialize_grid(grid_rows, grid_cols, mode=mode)
 
-        # Flatten and shuffle the input image into RGB vectors
-        input_vectors = generate_input_vectors(input_image)
+        visualize_rgb_grid(som_grid, filename=f"initial_map_kohonen_{mode}.png")
 
-        # File to save codebook vectors
+        input_vectors, orig_img = generate_input_vectors(input_image)
+
         codebook_filename = f"codebook_vectors_{radius}.txt"
         reconstructed_filename = f"reconstructed_image_{radius}.txt"
+        output_image_filename = f"compressed_image_{radius}.png"
 
-        # Determine neighborhood neurons
-
-        # Empty codebook_vectors.txt
+        # Empty codebook_filename
         with open(codebook_filename, "w") as f:
             pass
 
@@ -43,20 +29,18 @@ def main():
 
                 neighbors = determine_neighborhood_neurons(som_grid, winner_pos, radius = radius)
 
-                # Update weights for the neighborhood
-                update_weights_kohonen(som_grid, neighbors, winner_pos, input_vector, learning_rate(step))
+                # Update weights for the neighborhood using the radius as standard deviation
+                som_grid = update_weights_kohonen(som_grid, neighbors, winner_pos, input_vector, learning_rate(step), sigma_t=radius)
 
             # Save codebook vectors every 100 timesteps
                 if (step + 1) % 100 == 0:
                     save_codebook(som_grid, step + 1, codebook_filename)
 
+        visualize_rgb_grid(som_grid, filename=f"kohonen_map_{radius}_{mode}.png")
+
         # Reconstruct the image and save data
         reconstruct_image(input_image, som_grid, reconstructed_filename)
 
-        reconstructed_filename =f"reconstructed_image_{radius}.txt"
-        output_image_filename = f"compressed_image_{radius}.png"
-
-        # Example dimensions (adjust as needed)
         original_width = input_image.shape[1]
         original_height = input_image.shape[0]
 

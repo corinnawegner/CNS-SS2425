@@ -11,11 +11,11 @@ def main():
 
     for img, name in zip([input_image_1, input_image_2], names):
         # Initialize SOM grid and parameters
-        grid_rows, grid_cols = 32, 32
-        som_grid = initialize_grid(grid_rows, grid_cols)
+        grid_rows, grid_cols = 10, 10
+        som_grid = initialize_grid(grid_rows, grid_cols, init_blue_to_zero=True)
 
         # Flatten and shuffle the input image into RGB vectors
-        input_vectors = generate_input_vectors(img)
+        input_vectors, original_image = generate_input_vectors(img)
 
         # File to save codebook vectors
         codebook_filename = f"codebook_vectors_{name}.txt"
@@ -27,31 +27,40 @@ def main():
         with open(codebook_filename, "w") as f:
             pass
 
-        for step in tqdm(range(100)):
-            for input_vector in input_vectors:
+        for index in tqdm(range(3)):
+            for step, input_vector in enumerate(input_vectors):
 
                 winner_pos = find_winning_neuron(som_grid, input_vector)
 
-                neighbors = determine_neighborhood_neurons(som_grid, winner_pos, radius = radius)
+                neighbors = determine_neighborhood_neurons(som_grid, winner_pos, radius=radius)
 
-                # Update weights for the neighborhood
-                update_weights_kohonen(som_grid, neighbors, winner_pos, input_vector, learning_rate(0))
+                # Update weights for the neighborhood using the radius as standard deviation
+                som_grid = update_weights_kohonen(som_grid, neighbors, winner_pos, input_vector, learning_rate(step),
+                                                  sigma_t=radius)
 
-            # Save codebook vectors every 100 timesteps
-            if (step + 1) % 100 == 0:
-                save_codebook(som_grid, step + 1, codebook_filename)
+                # Save codebook vectors every 100 timesteps
+                if (step + 1) % 100 == 0:
+                    save_codebook(som_grid, step + 1, codebook_filename)
 
-        # Reconstruct the image and save data
-        reconstruct_image(img, som_grid, reconstructed_filename)
+        visualize_rgb_grid(som_grid, filename=f"Kohonen_map_{name}.png")
 
-        reconstructed_filename =f"reconstructed_image_{name}.txt"
-        output_image_filename = f"compressed_image_{name}.png"
+        red_part = som_grid[:, :, 0].flatten()/256  # Flatten to 1D array
+        green_part = som_grid[:, :, 1].flatten()/256  # Flatten to 1D array
 
-        # Example dimensions (adjust as needed)
-        original_width = img.shape[1]
-        original_height = img.shape[0]
+        colors = np.column_stack((red_part, green_part, np.zeros_like(red_part)))  # B = 0
 
-        reconstruct_compressed_image(reconstructed_filename, output_image_filename, original_width, original_height)
+        # Create scatter plot in the red-green plane
+        plt.scatter(red_part, green_part, c=colors, edgecolors='k')
+
+        # Labels and title
+        plt.xlabel("Red Channel")
+        plt.ylabel("Green Channel")
+        plt.title(f"Projection of codebook vectors from {name}")
+
+        # Show the plot
+        plt.show()
+
+
 
 
 if __name__ == "__main__":
